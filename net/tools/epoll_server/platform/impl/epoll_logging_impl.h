@@ -5,10 +5,7 @@
 #ifndef NET_TOOLS_EPOLL_SERVER_PLATFORM_IMPL_EPOLL_LOGGING_IMPL_H_
 #define NET_TOOLS_EPOLL_SERVER_PLATFORM_IMPL_EPOLL_LOGGING_IMPL_H_
 
-#include "base/check_op.h"
-#include "base/logging.h"
-#include "base/notreached.h"
-
+// TODO(fangqiuhang):
 #define EPOLL_CHROMIUM_LOG_INFO VLOG(1)
 #define EPOLL_CHROMIUM_LOG_WARNING DLOG(WARNING)
 #define EPOLL_CHROMIUM_LOG_ERROR DLOG(ERROR)

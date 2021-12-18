@@ -5,16 +5,14 @@
 #ifndef NET_QUICHE_COMMON_PLATFORM_IMPL_QUICHE_TEST_IMPL_H_
 #define NET_QUICHE_COMMON_PLATFORM_IMPL_QUICHE_TEST_IMPL_H_
 
-#include "testing/gmock/include/gmock/gmock.h"  // IWYU pragma: export
-#include "testing/gtest/include/gtest/gtest.h"  // IWYU pragma: export
-
 namespace quiche {
 namespace test {
 
 class QuicheTest : public ::testing::Test {};
 
+// TODO(fangqiuhang):
 template <class T>
-class QuicheTestWithParamImpl : public ::testing::TestWithParam<T> {};
+class QuicheTestWithParamImpl {};
 
 std::string QuicheGetCommonSourcePathImpl();
 

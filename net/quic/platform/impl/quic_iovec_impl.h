@@ -7,7 +7,7 @@
 
 #include <stddef.h>
 
-#include "build/build_config.h"
+// TODO(fangqiuhang): maybe impl build_config.h
 
 #if defined(OS_WIN)
 /* Structure for scatter/gather I/O.  */

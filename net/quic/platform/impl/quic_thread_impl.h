@@ -5,16 +5,12 @@
 #ifndef NET_QUIC_PLATFORM_IMPL_QUIC_THREAD_IMPL_H_
 #define NET_QUIC_PLATFORM_IMPL_QUIC_THREAD_IMPL_H_
 
-#include "base/threading/simple_thread.h"
-
 namespace quic {
 
 // A class representing a thread of execution in QUIC.
-class QuicThreadImpl : public base::SimpleThread {
+class QuicThreadImpl {
  public:
-  QuicThreadImpl(const std::string& string) : base::SimpleThread(string) {}
-  QuicThreadImpl(const QuicThreadImpl&) = delete;
-  QuicThreadImpl& operator=(const QuicThreadImpl&) = delete;
+  // TODO(fangqiuhang): impl base::SimpleThread?
 };
 
 }  // namespace quic

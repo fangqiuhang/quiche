@@ -11,12 +11,8 @@
 #include <string>
 #include <vector>
 
-#include "base/command_line.h"
-#include "base/export_template.h"
-#include "base/no_destructor.h"
 #include "net/third_party/quiche/src/common/platform/api/quiche_flags.h"
 #include "net/third_party/quiche/src/quic/platform/api/quic_export.h"
-#include "third_party/abseil-cpp/absl/types/optional.h"
 
 #define QUIC_PROTOCOL_FLAG(type, flag, ...) \
   QUIC_EXPORT_PRIVATE extern type FLAGS_##flag;
@@ -100,8 +96,7 @@ class QUIC_EXPORT_PRIVATE QuicFlagRegistry {
   // Sets any flags in the registry that are specified in |command_line|,
   // returning true iff successful. If there is a failure, e.g. due to an
   // invalid flag value, returns false and sets |error_msg|.
-  bool SetFlags(const base::CommandLine& command_line,
-                std::string* error_msg) const;
+  // TODO(fangqiuhang): maybe impl base::CommandLine.
 
   // Resets flags to their default values.
   void ResetFlags() const;
@@ -111,8 +106,6 @@ class QUIC_EXPORT_PRIVATE QuicFlagRegistry {
   std::string GetHelp() const;
 
  private:
-  friend class base::NoDestructor<QuicFlagRegistry>;
-
   // Should only be accessed as a singleton.
   QuicFlagRegistry();
 
@@ -158,10 +151,6 @@ struct QUIC_EXPORT_PRIVATE QuicParseCommandLineFlagsResult {
   std::vector<std::string> non_flag_args;
   absl::optional<int> exit_status;
 };
-
-QUIC_EXPORT_PRIVATE QuicParseCommandLineFlagsResult
-QuicParseCommandLineFlagsHelper(const char* usage,
-                                const base::CommandLine& command_line);
 
 QUIC_EXPORT_PRIVATE void QuicPrintCommandLineFlagHelpImpl(const char* usage);
 

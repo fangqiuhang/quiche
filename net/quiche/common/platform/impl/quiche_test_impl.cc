@@ -6,15 +6,11 @@
 
 #include <string>
 
-#include "base/files/file_path.h"
-#include "net/test/test_data_directory.h"
-
 namespace quiche {
 namespace test {
 
 std::string QuicheGetCommonSourcePathImpl() {
-  base::FilePath net_path = net::GetTestNetDirectory();
-  return net_path.AppendASCII("third_party/quiche/common").MaybeAsASCII();
+  return "third_party/quiche/common";
 }
 
 }  // namespace test

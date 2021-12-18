@@ -7,7 +7,6 @@
 
 #include <cstdint>
 
-#include "net/base/net_export.h"
 #include "third_party/abseil-cpp/absl/types/optional.h"
 
 namespace quiche {

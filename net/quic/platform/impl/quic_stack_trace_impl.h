@@ -5,12 +5,11 @@
 #ifndef NET_QUIC_PLATFORM_IMPL_QUIC_STACK_TRACE_IMPL_H_
 #define NET_QUIC_PLATFORM_IMPL_QUIC_STACK_TRACE_IMPL_H_
 
-#include "base/debug/stack_trace.h"
-
 namespace quic {
 
 inline std::string QuicStackTraceImpl() {
-  return base::debug::StackTrace().ToString();
+  // TODO(fangqiuhang):
+  return "";
 }
 
 }  // namespace quic

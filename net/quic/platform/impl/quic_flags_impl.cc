@@ -11,15 +11,6 @@
 #include <set>
 #include <string>
 
-#include "base/command_line.h"
-#include "base/export_template.h"
-#include "base/logging.h"
-#include "base/no_destructor.h"
-#include "base/strings/strcat.h"
-#include "base/strings/string_number_conversions.h"
-#include "base/strings/string_util.h"
-#include "base/strings/utf_string_conversions.h"
-#include "build/build_config.h"
 #include "net/third_party/quiche/src/quic/platform/api/quic_logging.h"
 
 #define DEFINE_QUIC_PROTOCOL_FLAG_SINGLE_VALUE(type, flag, value, doc) \
@@ -32,9 +23,7 @@
 // Preprocessor macros can only have one definition.
 // Select the right macro based on the number of arguments.
 #define GET_6TH_ARG(arg1, arg2, arg3, arg4, arg5, arg6, ...) arg6
-#define QUIC_PROTOCOL_FLAG_MACRO_CHOOSER(...)                    \
-  GET_6TH_ARG(__VA_ARGS__, DEFINE_QUIC_PROTOCOL_FLAG_TWO_VALUES, \
-              DEFINE_QUIC_PROTOCOL_FLAG_SINGLE_VALUE)
+#define QUIC_PROTOCOL_FLAG_MACRO_CHOOSER(...) /* TODO(fangqiuhang): */
 #define QUIC_PROTOCOL_FLAG(...) \
   QUIC_PROTOCOL_FLAG_MACRO_CHOOSER(__VA_ARGS__)(__VA_ARGS__)
 
@@ -50,6 +39,8 @@ namespace quic {
 
 namespace {
 
+char* kWhitespaceASCII = " \t";
+
 // Overload for platforms where base::CommandLine::StringType == std::string.
 std::vector<std::string> __attribute__((unused))
 ToQuicStringVector(const std::vector<std::string>& v) {
@@ -61,13 +52,7 @@ ToQuicStringVector(const std::vector<std::string>& v) {
 std::vector<std::string> __attribute__((unused))
 ToQuicStringVector(const std::vector<std::wstring>& v) {
   std::vector<std::string> qsv;
-  for (const auto& s : v) {
-    if (!base::IsStringASCII(s)) {
-      QUIC_LOG(ERROR) << "Unable to convert to ASCII: " << s;
-      continue;
-    }
-    qsv.push_back(base::WideToASCII(s));
-  }
+  // TODO(fangqiuhang):
   return qsv;
 }
 #endif  // defined(WCHAR_T_IS_UTF16)
@@ -76,11 +61,11 @@ size_t FindLineWrapPosition(const std::string& s, size_t desired_len) {
   if (s.length() <= desired_len) {
     return std::string::npos;
   }
-  size_t pos = s.find_last_of(base::kWhitespaceASCII, desired_len);
+  size_t pos = s.find_last_of(kWhitespaceASCII, desired_len);
   if (pos != std::string::npos) {
     return pos;
   }
-  pos = s.find_first_of(base::kWhitespaceASCII, desired_len);
+  pos = s.find_first_of(kWhitespaceASCII, desired_len);
   if (pos != std::string::npos) {
     return pos;
   }
@@ -99,16 +84,17 @@ void AppendFlagDescription(const std::string& name,
   const int kMinPadding = 2;
   static const char kDashes[] = "--";
 
-  base::StrAppend(out, {kDashes, name});
+  // TODO(fangqiuhang): maybe impl base::StrAppend
+  out += kDashes + name;
   int col = strlen(kDashes) + name.length();
   if (col + kMinPadding < kEndCol) {
     // Start help text on same line
     int pad_len = std::max(kMinPadding, kStartCol - col);
-    base::StrAppend(out, {std::string(pad_len, ' ')});
+    out += std::string(pad_len, ' ');
     col += pad_len;
   } else {
     // Start help text on next line
-    base::StrAppend(out, {"\n", std::string(kStartCol, ' ')});
+    out += "\n" + std::string(kStartCol, ' ');
     col = kStartCol;
   }
 
@@ -116,47 +102,48 @@ void AppendFlagDescription(const std::string& name,
     size_t desired_len = kEndCol - col;
     size_t wrap_pos = FindLineWrapPosition(help, desired_len);
     if (wrap_pos == std::string::npos) {
-      base::StrAppend(out, {help});
+      out += help;
       break;
     }
-    base::StrAppend(
-        out, {help.substr(0, wrap_pos), "\n", std::string(kStartCol, ' ')});
+    out += help.substr(0, wrap_pos) + "\n" + std::string(kStartCol, ' ');
     help = help.substr(wrap_pos + 1);
     col = kStartCol;
   }
-  base::StrAppend(out, {"\n"});
+  out += "\n";
+}
+
+std::string ToLowerASCII(std::string s) {
+  char buff[1000];
+  char* ins = s.c_str();
+  int i = 0;
+  for (; i < s.length(); i++) {
+    buff[i] = tolower(ins[i]);
+  }
+  buff[i] = '\0';
+  return std::string(buff);
+}
+
+bool StringToInt(std::string& s, int* value) {
+  *value = atoi(s.c_str());
+  return true;
+}
+
+bool StringToInt64(std::string& s, int64_t value) {
+  *value = atoi(s.c_str());
+  return true;
 }
 
 }  // namespace
 
 // static
 QuicFlagRegistry& QuicFlagRegistry::GetInstance() {
-  static base::NoDestructor<QuicFlagRegistry> instance;
-  return *instance;
+  static QuicFlagRegistry instance;
+  return instance;
 }
 
 void QuicFlagRegistry::RegisterFlag(const char* name,
                                     std::unique_ptr<QuicFlagHelper> helper) {
   flags_.emplace(std::string(name), std::move(helper));
-}
-
-bool QuicFlagRegistry::SetFlags(const base::CommandLine& command_line,
-                                std::string* error_msg) const {
-  for (const auto& kv : flags_) {
-    const std::string& name = kv.first;
-    const QuicFlagHelper* helper = kv.second.get();
-    if (!command_line.HasSwitch(name)) {
-      continue;
-    }
-    std::string value = command_line.GetSwitchValueASCII(name);
-    if (!helper->SetFlag(value)) {
-      *error_msg =
-          base::StrCat({"Invalid value \"", value, "\" for flag --", name});
-      return false;
-    }
-    QUIC_LOG(INFO) << "Set flag --" << name << " = " << value;
-  }
-  return true;
 }
 
 void QuicFlagRegistry::ResetFlags() const {
@@ -177,15 +164,15 @@ std::string QuicFlagRegistry::GetHelp() const {
 
 template <>
 bool TypedQuicFlagHelper<bool>::SetFlag(const std::string& s) const {
-  static const base::NoDestructor<std::set<std::string>> kTrueValues(
+  static const std::set<std::string> kTrueValues(
       std::initializer_list<std::string>({"", "1", "t", "true", "y", "yes"}));
-  static const base::NoDestructor<std::set<std::string>> kFalseValues(
+  static const std::set<std::string> kFalseValues(
       std::initializer_list<std::string>({"0", "f", "false", "n", "no"}));
-  if (kTrueValues->find(base::ToLowerASCII(s)) != kTrueValues->end()) {
+  if (kTrueValues.find(ToLowerASCII(s)) != kTrueValues.end()) {
     *flag_ = true;
     return true;
   }
-  if (kFalseValues->find(base::ToLowerASCII(s)) != kFalseValues->end()) {
+  if (kFalseValues.find(ToLowerASCII(s)) != kFalseValues.end()) {
     *flag_ = false;
     return true;
   }
@@ -195,8 +182,7 @@ bool TypedQuicFlagHelper<bool>::SetFlag(const std::string& s) const {
 template <>
 bool TypedQuicFlagHelper<uint16_t>::SetFlag(const std::string& s) const {
   int value;
-  if (!base::StringToInt(s, &value) ||
-      value < std::numeric_limits<uint16_t>::min() ||
+  if (!StringToInt(s, &value) || value < std::numeric_limits<uint16_t>::min() ||
       value > std::numeric_limits<uint16_t>::max()) {
     return false;
   }
@@ -207,7 +193,7 @@ bool TypedQuicFlagHelper<uint16_t>::SetFlag(const std::string& s) const {
 template <>
 bool TypedQuicFlagHelper<int32_t>::SetFlag(const std::string& s) const {
   int32_t value;
-  if (!base::StringToInt(s, &value)) {
+  if (!StringToInt(s, &value)) {
     return false;
   }
   *flag_ = value;
@@ -233,36 +219,9 @@ std::vector<std::string> QuicParseCommandLineFlagsImpl(
     const char* usage,
     int argc,
     const char* const* argv) {
-  base::CommandLine::Init(argc, argv);
-  auto result = QuicParseCommandLineFlagsHelper(
-      usage, *base::CommandLine::ForCurrentProcess());
-  if (result.exit_status.has_value()) {
-    exit(*result.exit_status);
-  }
-
-  logging::LoggingSettings settings;
-  settings.logging_dest = logging::LOG_TO_STDERR;
-  CHECK(logging::InitLogging(settings));
+  // TODO(fangqiuhang): parse args and set flags.
 
   return result.non_flag_args;
-}
-
-QuicParseCommandLineFlagsResult QuicParseCommandLineFlagsHelper(
-    const char* usage,
-    const base::CommandLine& command_line) {
-  QuicParseCommandLineFlagsResult result;
-  result.non_flag_args = ToQuicStringVector(command_line.GetArgs());
-  if (command_line.HasSwitch("h") || command_line.HasSwitch("help")) {
-    QuicPrintCommandLineFlagHelpImpl(usage);
-    result.exit_status = 0;
-  } else {
-    std::string msg;
-    if (!QuicFlagRegistry::GetInstance().SetFlags(command_line, &msg)) {
-      std::cerr << msg << std::endl;
-      result.exit_status = 1;
-    }
-  }
-  return result;
 }
 
 void QuicPrintCommandLineFlagHelpImpl(const char* usage) {
@@ -290,25 +249,25 @@ void SetQuicFlagByName_bool(bool* flag, const std::string& value) {
 }
 void SetQuicFlagByName_double(double* flag, const std::string& value) {
   double val;
-  if (base::StringToDouble(value, &val))
+  if (StringToDouble(value, &val))
     *flag = val;
 }
 
 void SetQuicFlagByName_uint64_t(uint64_t* flag, const std::string& value) {
   uint64_t val;
-  if (base::StringToUint64(value, &val) && val >= 0)
+  if (StringToUint64(value, &val) && val >= 0)
     *flag = val;
 }
 
 void SetQuicFlagByName_int32_t(int32_t* flag, const std::string& value) {
   int val;
-  if (base::StringToInt(value, &val))
+  if (StringToInt(value, &val))
     *flag = val;
 }
 
 void SetQuicFlagByName_int64_t(int64_t* flag, const std::string& value) {
   int64_t val;
-  if (base::StringToInt64(value, &val))
+  if (StringToInt64(value, &val))
     *flag = val;
 }
 

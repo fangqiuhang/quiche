@@ -5,8 +5,7 @@
 #ifndef NET_TOOLS_EPOLL_SERVER_PLATFORM_IMPL_EPOLL_TEST_IMPL_H_
 #define NET_TOOLS_EPOLL_SERVER_PLATFORM_IMPL_EPOLL_TEST_IMPL_H_
 
-#include "testing/gtest/include/gtest/gtest.h"  // IWYU pragma: export
-
-using EpollTestImpl = ::testing::Test;
+// TODO(fangqiuhang):
+using EpollTestImpl;
 
 #endif  // NET_TOOLS_EPOLL_SERVER_PLATFORM_IMPL_EPOLL_TEST_IMPL_H_

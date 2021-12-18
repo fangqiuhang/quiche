@@ -7,16 +7,11 @@
 
 #include <vector>
 
-#include "base/containers/flat_set.h"
-
 namespace quic {
 
 // TODO(wub): Switch to absl::InlinedVector once it is allowed.
 template <typename T, size_t N, typename A = std::allocator<T>>
 using QuicInlinedVectorImpl = std::vector<T, A>;
-
-template <typename Key, typename Compare>
-using QuicSmallOrderedSetImpl = base::flat_set<Key, Compare>;
 
 }  // namespace quic
 

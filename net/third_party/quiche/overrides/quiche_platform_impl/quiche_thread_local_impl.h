@@ -5,23 +5,12 @@
 #ifndef NET_THIRD_PARTY_QUICHE_OVERRIDES_QUICHE_PLATFORM_IMPL_QUICHE_THREAD_LOCAL_IMPL_H_
 #define NET_THIRD_PARTY_QUICHE_OVERRIDES_QUICHE_PLATFORM_IMPL_QUICHE_THREAD_LOCAL_IMPL_H_
 
-#include "base/no_destructor.h"
-#include "base/threading/thread_local.h"
+// TODO(fangqiuhang):
 
-#define DEFINE_QUICHE_THREAD_LOCAL_POINTER_IMPL(name, type)                   \
-  struct QuicheThreadLocalPointer_##name {                                    \
-    static ::base::ThreadLocalPointer<type>* Instance() {                     \
-      static ::base::NoDestructor<::base::ThreadLocalPointer<type>> instance; \
-      return instance.get();                                                  \
-    }                                                                         \
-    static type* Get() { return Instance()->Get(); }                          \
-    static void Set(type* ptr) { Instance()->Set(ptr); }                      \
-  }
+#define DEFINE_QUICHE_THREAD_LOCAL_POINTER_IMPL(name, type)
 
-#define GET_QUICHE_THREAD_LOCAL_POINTER_IMPL(name) \
-  QuicheThreadLocalPointer_##name::Get()
+#define GET_QUICHE_THREAD_LOCAL_POINTER_IMPL(name)
 
-#define SET_QUICHE_THREAD_LOCAL_POINTER_IMPL(name, value) \
-  QuicheThreadLocalPointer_##name::Set(value)
+#define SET_QUICHE_THREAD_LOCAL_POINTER_IMPL(name, value)
 
 #endif  // NET_THIRD_PARTY_QUICHE_OVERRIDES_QUICHE_PLATFORM_IMPL_QUICHE_THREAD_LOCAL_IMPL_H_

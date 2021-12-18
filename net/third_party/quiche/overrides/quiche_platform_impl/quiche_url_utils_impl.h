@@ -7,7 +7,6 @@
 
 #include <string>
 
-#include "net/base/net_export.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_map.h"
 #include "third_party/abseil-cpp/absl/container/flat_hash_set.h"
 #include "third_party/abseil-cpp/absl/strings/string_view.h"

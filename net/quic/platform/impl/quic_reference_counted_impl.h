@@ -5,7 +5,7 @@
 #ifndef NET_QUIC_PLATFORM_IMPL_QUIC_REFERENCE_COUNTED_IMPL_H_
 #define NET_QUIC_PLATFORM_IMPL_QUIC_REFERENCE_COUNTED_IMPL_H_
 
-#include "base/memory/ref_counted.h"
+// TODO(fangqiuhang): impl ref_counted? it seems no need.
 #include "net/third_party/quiche/src/quic/platform/api/quic_export.h"
 
 namespace quic {

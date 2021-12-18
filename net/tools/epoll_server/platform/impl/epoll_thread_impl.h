@@ -5,16 +5,12 @@
 #ifndef NET_TOOLS_EPOLL_SERVER_PLATFORM_IMPL_EPOLL_THREAD_IMPL_H_
 #define NET_TOOLS_EPOLL_SERVER_PLATFORM_IMPL_EPOLL_THREAD_IMPL_H_
 
-#include "base/threading/simple_thread.h"
-
 namespace epoll_server {
 
 // A class representing a thread of execution in epoll_server.
-class EpollThreadImpl : public base::SimpleThread {
+class EpollThreadImpl {
  public:
-  EpollThreadImpl(const std::string& string) : base::SimpleThread(string) {}
-  EpollThreadImpl(const EpollThreadImpl&) = delete;
-  EpollThreadImpl& operator=(const EpollThreadImpl&) = delete;
+  // TODO(fangqiuhang):
 };
 
 }  // namespace epoll_server

@@ -7,8 +7,9 @@
 
 #include "net/quic/platform/impl/quic_test_flags_utils.h"
 
-#include "base/check_op.h"
 #include "net/quic/platform/impl/quic_flags_impl.h"
+
+// TODO(fangqiuhang): impl CHECK, CHECK_EQ, etc.
 
 QuicFlagSaverImpl::QuicFlagSaverImpl() {
 #define QUIC_FLAG(flag, value) saved_##flag##_ = flag;

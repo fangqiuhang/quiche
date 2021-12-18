@@ -4,14 +4,12 @@
 
 #include "net/quic/platform/impl/quic_chromium_clock.h"
 
-#include "base/no_destructor.h"
-#include "base/time/time.h"
-
 namespace quic {
 
 QuicChromiumClock* QuicChromiumClock::GetInstance() {
-  static base::NoDestructor<QuicChromiumClock> instance;
-  return instance.get();
+  // TODO(fangqiuhang): maybe impl base::NoDestructor.
+  static QuicChromiumClock instance;
+  return &instance;
 }
 
 QuicChromiumClock::QuicChromiumClock() = default;
@@ -25,26 +23,17 @@ QuicTime QuicChromiumClock::ApproximateNow() const {
 }
 
 QuicTime QuicChromiumClock::Now() const {
-  int64_t ticks = (base::TimeTicks::Now() - base::TimeTicks()).InMicroseconds();
+  // TODO(fangqiuhang):
+  int64_t ticks = 0;
   DCHECK_GE(ticks, 0);
   return CreateTimeFromMicroseconds(ticks);
 }
 
 QuicWallTime QuicChromiumClock::WallNow() const {
-  const base::TimeDelta time_since_unix_epoch =
-      base::Time::Now() - base::Time::UnixEpoch();
-  int64_t time_since_unix_epoch_micro = time_since_unix_epoch.InMicroseconds();
+  // TODO(fangqiuhang):
+  int64_t time_since_unix_epoch_micro = 1;
   DCHECK_GE(time_since_unix_epoch_micro, 0);
   return QuicWallTime::FromUNIXMicroseconds(time_since_unix_epoch_micro);
-}
-
-// static
-base::TimeTicks QuicChromiumClock::QuicTimeToTimeTicks(QuicTime quic_time) {
-  // QuicChromiumClock defines base::TimeTicks() as equal to
-  // quic::QuicTime::Zero(). See QuicChromiumClock::Now() above.
-  QuicTime::Delta offset_from_zero = quic_time - QuicTime::Zero();
-  int64_t offset_from_zero_us = offset_from_zero.ToMicroseconds();
-  return base::TimeTicks() + base::Microseconds(offset_from_zero_us);
 }
 
 }  // namespace quic

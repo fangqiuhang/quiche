@@ -5,12 +5,11 @@
 #ifndef NET_TOOLS_EPOLL_SERVER_PLATFORM_IMPL_EPOLL_TIME_IMPL_H_
 #define NET_TOOLS_EPOLL_SERVER_PLATFORM_IMPL_EPOLL_TIME_IMPL_H_
 
-#include "base/time/time.h"
-
 namespace epoll_server {
 
 inline int64_t WallTimeNowInUsecImpl() {
-  return (base::Time::Now() - base::Time::UnixEpoch()).InMicroseconds();
+  // TODO(fangqiuhang):
+  return 0;
 }
 
 }  // namespace epoll_server

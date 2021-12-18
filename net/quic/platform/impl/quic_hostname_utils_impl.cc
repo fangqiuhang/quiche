@@ -7,8 +7,6 @@
 #include "base/strings/abseil_string_conversions.h"
 #include "net/base/url_util.h"
 #include "net/third_party/quiche/src/quic/platform/api/quic_flags.h"
-#include "url/gurl.h"
-#include "url/url_canon.h"
 
 namespace quic {
 

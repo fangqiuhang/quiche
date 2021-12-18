@@ -7,8 +7,7 @@
 
 #include <memory>
 
-#include "base/memory/ref_counted.h"
-#include "net/base/io_buffer.h"
+// TODO(fangqiuhang): impl scoped_refptr & net::IOBuffer
 #include "net/third_party/quiche/src/quic/core/quic_buffer_allocator.h"
 #include "net/third_party/quiche/src/quic/platform/api/quic_export.h"
 
@@ -24,7 +23,8 @@ class QUIC_EXPORT_PRIVATE QuicMemSliceImpl {
   QuicMemSliceImpl(QuicUniqueBufferPtr buffer, size_t length);
   QuicMemSliceImpl(std::unique_ptr<char[]> buffer, size_t length);
 
-  QuicMemSliceImpl(scoped_refptr<net::IOBuffer> io_buffer, size_t length);
+  // TODO(fangqiuhang): maybe impl net::IOBuffer?
+  // QuicMemSliceImpl(scoped_refptr<net::IOBuffer> io_buffer, size_t length);
 
   QuicMemSliceImpl(const QuicMemSliceImpl& other) = delete;
   QuicMemSliceImpl& operator=(const QuicMemSliceImpl& other) = delete;
