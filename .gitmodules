@@ -1,0 +1,6 @@
+[submodule "third_party/boringssl/src"]
+	path = third_party/boringssl/src
+	url = https://github.com/google/boringssl.git
+[submodule "net/third_party/quiche/src"]
+	path = net/third_party/quiche/src
+	url = git@github.com:google/quiche.git
