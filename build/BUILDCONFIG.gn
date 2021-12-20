@@ -1,0 +1,198 @@
+# Copyright 2014 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+if (target_os == "") {
+  target_os = host_os
+}
+if (target_cpu == "") {
+  target_cpu = host_cpu
+}
+if (current_cpu == "") {
+  current_cpu = target_cpu
+}
+if (current_os == "") {
+  current_os = target_os
+}
+
+
+## From chromium build/config/BUILDCONFIG.gn
+
+
+# =============================================================================
+# BUILD FLAGS
+# =============================================================================
+
+declare_args() {
+  is_debug = false
+}
+
+declare_args() {
+  is_component_build = is_debug && current_os != "ios"
+  is_clang = current_os != "linux" ||
+             (current_cpu != "s390x" && current_cpu != "s390" &&
+              current_cpu != "ppc64" && current_cpu != "ppc" &&
+              current_cpu != "mips" && current_cpu != "mips64" &&
+              current_cpu != "riscv64")
+}
+
+
+# ==============================================================================
+# TOOLCHAIN SETUP
+# ==============================================================================
+
+set_default_toolchain("//build/toolchain:gcc")
+
+
+# =============================================================================
+# OS DEFINITIONS
+# =============================================================================
+
+is_ios = false
+is_win = false
+is_linux = true
+
+is_linux = host_os == "linux" && current_os == "linux" && target_os == "linux"
+is_mac = host_os == "mac" && current_os == "mac" && target_os == "mac"
+
+is_android = current_os == "android"
+is_ios = current_os == "ios"
+is_win = current_os == "win" || current_os == "winuwp"
+
+is_apple = is_ios || is_mac
+is_posix = !is_win
+
+
+# =============================================================================
+# TARGET DEFAULTS
+# =============================================================================
+
+# All binary targets will get this list of configs by default.
+_shared_binary_target_configs = [ "//build:compiler_defaults" ]
+
+# Apply that default list to the binary target types.
+set_defaults("executable") {
+  configs = _shared_binary_target_configs
+
+  # Executables get this additional configuration.
+  configs += [ "//build:executable_ldconfig" ]
+}
+set_defaults("static_library") {
+  configs = _shared_binary_target_configs
+}
+set_defaults("shared_library") {
+  configs = _shared_binary_target_configs
+}
+set_defaults("source_set") {
+  configs = _shared_binary_target_configs
+}
+
+# A helper for forwarding testonly and visibility.
+# Forwarding "*" does not include variables from outer scopes (to avoid copying
+# all globals into each template invocation), so it will not pick up
+# file-scoped or outer-template-scoped variables. Normally this behavior is
+# desired, but "visibility" and "testonly" are commonly defined in outer scopes.
+# Explicitly forwarding them in forward_variables_from() works around this
+# nuance. See //build/docs/writing_gn_templates.md#using-forward_variables_from
+TESTONLY_AND_VISIBILITY = [
+  "testonly",
+  "visibility",
+]
+
+
+# Sets default dependencies for executable and shared_library targets.
+#
+# Variables
+#   no_default_deps: If true, no standard dependencies will be added.
+#       Targets that set this usually also want to remove
+#       "//build/config/compiler:runtime_library" from configs (to remove
+#       its subconfig "//build/config/c++:runtime_library").
+foreach(_target_type,
+        [
+          "executable",
+          "loadable_module",
+          "shared_library",
+        ]) {
+  template(_target_type) {
+    # Alias "target_name" because it is clobbered by forward_variables_from().
+    _target_name = target_name
+    target(_target_type, _target_name) {
+      forward_variables_from(invoker,
+                             "*",
+                             TESTONLY_AND_VISIBILITY + [ "no_default_deps" ])
+      forward_variables_from(invoker, TESTONLY_AND_VISIBILITY)
+      if (!defined(deps)) {
+        deps = []
+      }
+
+      # On Android, write shared library output file to metadata. We will use
+      # this information to, for instance, collect all shared libraries that
+      # should be packaged into an APK.
+      if (!defined(invoker.metadata) && is_android &&
+          (_target_type == "shared_library" ||
+           _target_type == "loadable_module")) {
+        _output_name = _target_name
+        if (defined(invoker.output_name)) {
+          _output_name = invoker.output_name
+        }
+
+        # Remove 'lib' prefix from output name if it exists.
+        _magic_prefix = "$0x01$0x01"
+        _output_name = string_replace("${_magic_prefix}${_output_name}",
+                                      "${_magic_prefix}lib",
+                                      _magic_prefix,
+                                      1)
+        _output_name = string_replace(_output_name, _magic_prefix, "", 1)
+
+        if (defined(output_extension)) {
+          _shlib_extension = ".$output_extension"
+        } else if (is_component_build && _target_type != "loadable_module") {
+          _shlib_extension = ".cr.so"
+        } else {
+          _shlib_extension = ".so"
+        }
+
+        metadata = {
+          shared_libraries =
+              [ "$root_out_dir/lib${_output_name}${_shlib_extension}" ]
+        }
+      }
+    }
+  }
+}
+
+
+# ==============================================================================
+# COMPONENT SETUP
+# ==============================================================================
+
+# Defines a component, which equates to a shared_library when
+# is_component_build == true and a static_library otherwise.
+#
+# Use static libraries for the static build rather than source sets because
+# many of of our test binaries link many large dependencies but often don't
+# use large portions of them. The static libraries are much more efficient to
+# link in this situation since only the necessary object files are linked.
+#
+# The invoker can override the type of the target in the non-component-build
+# case by setting static_component_type to either "source_set" or
+# "static_library". If unset, the default will be used.
+template("component") {
+  if (is_component_build) {
+    _component_mode = "shared_library"
+  } else if (defined(invoker.static_component_type)) {
+    assert(invoker.static_component_type == "static_library" ||
+           invoker.static_component_type == "source_set")
+    _component_mode = invoker.static_component_type
+  } else if (!defined(invoker.sources) || invoker.sources == []) {
+    # When there are no sources defined, use a source set to avoid creating
+    # an empty static library (which generally don't work).
+    _component_mode = "source_set"
+  } else {
+    _component_mode = "static_library"
+  }
+  target(_component_mode, target_name) {
+    forward_variables_from(invoker, TESTONLY_AND_VISIBILITY)
+    forward_variables_from(invoker, "*", TESTONLY_AND_VISIBILITY)
+  }
+}

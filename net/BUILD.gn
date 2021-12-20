@@ -1,0 +1,254 @@
+# Copyright (c) 2013 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+#import("//build/buildflag_header.gni")
+#import("//build/config/chromecast_build.gni")
+#import("//build/config/chromeos/ui_mode.gni")
+#import("//build/config/compiler/compiler.gni")
+#import("//build/config/crypto.gni")
+#import("//build/config/features.gni")
+#import("//net/features.gni")
+#import("//testing/libfuzzer/fuzzer_test.gni")
+#import("//testing/test.gni")
+#import("//third_party/icu/config.gni")
+#import("//third_party/protobuf/proto_library.gni")
+#import("//tools/grit/grit_rule.gni")
+#import("//url/features.gni")
+
+if (is_android) {
+  import("//build/config/android/config.gni")
+  import("//build/config/android/rules.gni")
+} else if (is_mac) {
+  import("//build/config/mac/mac_sdk.gni")
+}
+
+# The way the cache uses mmap() is inefficient on some Android devices. If
+# this flag is set, we hackily avoid using mmap() in the disk cache. We are
+# pretty confident that mmap-ing the index would not hurt any existing x86
+# android devices, but we cannot be so sure about the variety of ARM devices.
+# So enable it for x86 only for now.
+#posix_avoid_mmap = is_android && current_cpu != "x86"
+
+#enable_built_in_dns = !is_ios
+
+# Unix sockets are not supported on iOS.
+#enable_unix_sockets = is_posix && !is_ios
+
+# Whether //net should use an external GSSAPI library for implementing HTTP
+# Negotiate authentication. All platforms for which use_kerberos is true should
+# have some external implementation since //net doesn't have intrinsic support
+# for Kerberos. This implementation is an external GSSAPI library on all
+# platforms except on:
+#
+#    Windows : Uses SSPI for Negotiate authentication.
+#
+#    Android : Uses an external authenticator. See
+#              https://www.chromium.org/developers/design-documents/http-authentication/writing-a-spnego-authenticator-for-chrome-on-android
+#use_external_gssapi = use_kerberos && !is_android && !is_win
+
+component("net") {
+  sources = [
+    "quic/platform/impl/quic_chromium_clock.cc",
+    "quic/platform/impl/quic_chromium_clock.h",
+    "quic/platform/impl/quic_client_stats_impl.h",
+    "quic/platform/impl/quic_containers_impl.h",
+    "quic/platform/impl/quic_error_code_wrappers_impl.h",
+    "quic/platform/impl/quic_file_utils_impl.h",
+    "quic/platform/impl/quic_flags_impl.cc",
+    "quic/platform/impl/quic_flags_impl.h",
+    "quic/platform/impl/quic_hostname_utils_impl.cc",
+    "quic/platform/impl/quic_hostname_utils_impl.h",
+    "quic/platform/impl/quic_iovec_impl.h",
+    "quic/platform/impl/quic_mem_slice_impl.cc",
+    "quic/platform/impl/quic_mem_slice_impl.h",
+    "quic/platform/impl/quic_prefetch_impl.h",
+    "quic/platform/impl/quic_reference_counted_impl.h",
+    "quic/platform/impl/quic_server_stats_impl.h",
+    "quic/platform/impl/quic_sleep_impl.h",
+    "quic/platform/impl/quic_stack_trace_impl.h",
+    "quiche/common/platform/impl/quiche_flag_utils_impl.h",
+    "quiche/common/platform/impl/quiche_flags_impl.cc",
+    "quiche/common/platform/impl/quiche_flags_impl.h",
+  ]
+
+  if (is_posix || is_fuchsia) {
+    sources += [ "base/net_errors_posix.cc" ]
+  }
+
+  defines = []
+
+  deps = [
+    ":net_deps",
+  ]
+
+  public_deps = [
+    #":net_export_header",
+    ":net_public_deps",
+    "//net/third_party/quiche",
+  ]
+
+  allow_circular_includes_from = [
+    #"//net/dns",
+    #"//net/dns:dns_client",
+    #"//net/dns:host_resolver",
+    #"//net/dns:host_resolver_manager",
+    #"//net/dns:mdns_client",
+    #"//net/dns/public",
+    #"//net/http:transport_security_state_generated_files",
+    "//net/third_party/quiche",
+  ]
+
+  cflags = []
+}
+
+# net_export.h has its own build target so that code (eg
+# net_nqe_proto) can use it without depending on the whole of //net.
+source_set("net_export_header") {
+  sources = [ "base/net_export.h" ]
+}
+
+# Private dependencies for the //net component and for any build targets (e.g.
+# source sets with circular dependencies with //net) that need to share the same
+# dependencies.
+source_set("net_deps") {
+  visibility = [
+    ":net",
+    "//net/dns",
+    "//net/dns:dns_client",
+    "//net/dns:host_resolver",
+    "//net/dns:host_resolver_manager",
+    "//net/dns:mdns_client",
+    "//net/dns/public",
+    "//net/http:transport_security_state_generated_files",
+    "//net/third_party/quiche",
+  ]
+
+  public_deps = [
+    #":constants",
+    #":isolation_info_proto",
+    ":net_export_header",
+    #":net_resources",
+    #":preload_decoder",
+    "//base",
+    #"//base/third_party/dynamic_annotations",
+    #"//net/base/registry_controlled_domains",
+    "//third_party/protobuf:protobuf_lite",
+    #"//third_party/zlib",
+    #"//url:buildflags",
+  ]
+
+  #public_configs = net_configs
+}
+
+# Public dependencies for the //net component and for any build targets (e.g.
+# source sets with circular dependencies with //net) that need to share the same
+# dependencies.
+source_set("net_public_deps") {
+  visibility = [
+    ":net",
+    "//net/third_party/quiche",
+  ]
+
+  public_deps = [
+    ":buildflags",
+    ":net_nqe_proto",
+    #"//base",
+    #"//crypto",
+    #"//crypto:platform",
+    "//net/third_party/quiche:net_quic_proto",
+    "//net/third_party/quiche:net_quic_test_tools_proto",
+    "//net/third_party/quiche:quiche_public_deps",
+    #"//net/traffic_annotation",
+    "//third_party/boringssl",
+    #"//url",
+  ]
+}
+
+if (is_linux || is_chromeos) {
+
+  source_set("epoll_quic_tools") {
+    testonly = true
+    sources = [
+      "quic/platform/impl/quic_epoll_clock.cc",
+      "quic/platform/impl/quic_epoll_clock.h",
+      "quic/platform/impl/quic_stream_buffer_allocator_impl.h",
+      "quic/platform/impl/quic_udp_socket_platform_impl.h",
+    ]
+    deps = [
+      #":epoll_server",
+      #":net",
+      ":simple_quic_tools",
+      #"//base",
+      #"//base/third_party/dynamic_annotations",
+      #"//crypto",
+      "//third_party/boringssl",
+      #"//url",
+    ]
+    public_deps = [ "//net/third_party/quiche:epoll_quic_tools_core" ]
+    allow_circular_includes_from =
+        [ "//net/third_party/quiche:epoll_quic_tools_core" ]
+  }
+}
+
+source_set("quiche_test_tools") {
+  testonly = true
+  sources = [
+    "quiche/common/platform/impl/quiche_test_helpers_impl.h",
+    "quiche/common/platform/impl/quiche_test_impl.cc",
+    "quiche/common/platform/impl/quiche_test_impl.h",
+  ]
+  deps = [
+    ":net",
+    #":test_support",
+    #"//testing/gmock",
+    #"//testing/gtest",
+  ]
+  public_deps = [ "//net/third_party/quiche:quiche_test_tools_core" ]
+  allow_circular_includes_from =
+      [ "//net/third_party/quiche:quiche_test_tools_core" ]
+}
+
+source_set("quic_test_flags_utils") {
+  testonly = true
+  sources = [
+    "quic/platform/impl/quic_test_flags_utils.cc",
+    "quic/platform/impl/quic_test_flags_utils.h",
+  ]
+  deps = [ ":net" ]
+}
+
+source_set("quic_test_tools") {
+  testonly = true
+  sources = [
+    "quic/platform/impl/quic_epoll_test_tools_impl.h",
+    "quic/platform/impl/quic_expect_bug_impl.h",
+    "quic/platform/impl/quic_mock_log_impl.h",
+    "quic/platform/impl/quic_test_impl.cc",
+    "quic/platform/impl/quic_test_impl.h",
+    "quic/platform/impl/quic_test_loopback_impl.cc",
+    "quic/platform/impl/quic_test_loopback_impl.h",
+    "quic/platform/impl/quic_test_output_impl.cc",
+    "quic/platform/impl/quic_test_output_impl.h",
+    "third_party/quiche/src/quic/test_tools/test_ticket_crypter.cc",
+  ]
+  deps = [
+    ":net",
+    ":quiche_test_tools",
+    ":simple_quic_tools",
+    ":test_support",
+    "//base",
+    #"//crypto:test_support",
+    #"//testing/gmock",
+    #"//testing/gtest",
+    "//third_party/boringssl",
+    #"//third_party/protobuf:protobuf_lite",
+    #"//third_party/quic_trace:quic_trace_proto",
+  ]
+  public_deps = [
+    ":quic_test_flags_utils",
+    "//net/third_party/quiche:quic_test_tools_core",
+  ]
+  allow_circular_includes_from =
+      [ "//net/third_party/quiche:quic_test_tools_core" ]
+}

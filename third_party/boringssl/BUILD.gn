@@ -1,0 +1,114 @@
+# Copyright 2014 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+#import("//build/BUILDCONFIG.gn")
+#import("//build/config/android/config.gni")
+#import("//build/config/arm.gni")
+#import("//build/config/compiler/compiler.gni")
+#import("//build/config/sanitizers/sanitizers.gni")
+#import("//build_overrides/build.gni")
+#import("//testing/libfuzzer/fuzzer_test.gni")
+import("BUILD.generated.gni")
+#import("BUILD.generated_tests.gni")
+#import("//build/BUILDCONFIG.gn")
+
+# Config for us and everybody else depending on BoringSSL.
+config("external_config") {
+  include_dirs = [ "src/include" ]
+  #if (is_component_build) {
+  #  defines = [ "BORINGSSL_SHARED_LIBRARY" ]
+  #}
+}
+
+# The config used by the :boringssl component itself, and the fuzzer copies.
+config("component_config") {
+  visibility = [ ":*" ]  # Only targets in this file can depend on this.
+  configs = [ ":internal_config" ]
+  defines = [ "BORINGSSL_IMPLEMENTATION" ]
+}
+
+# This config is used by anything that consumes internal headers. Tests consume
+# this rather than :component_config.
+config("internal_config") {
+  visibility = [ ":*" ]  # Only targets in this file can depend on this.
+  defines = [
+    "BORINGSSL_ALLOW_CXX_RUNTIME",
+    "BORINGSSL_NO_STATIC_INITIALIZER",
+    "OPENSSL_SMALL",
+  ]
+  if (is_posix || is_fuchsia) {
+    defines += [ "_XOPEN_SOURCE=700" ]
+  }
+}
+
+config("no_asm_config") {
+  visibility = [ ":*" ]  # Only targets in this file can depend on this.
+  defines = [ "OPENSSL_NO_ASM" ]
+}
+
+all_sources = crypto_sources + ssl_sources
+all_headers = crypto_headers + ssl_headers
+
+# Windows' assembly is built with NASM. The other platforms use the platform
+# assembler. Exclude Windows ARM64 because NASM targets x86 and x64 only.
+
+  # This has no sources on some platforms so must be a source_set.
+  source_set("boringssl_asm") {
+    visibility = [ ":*" ]  # Only targets in this file can depend on this.
+
+    sources = []
+    asmflags = []
+    include_dirs = [ "src/include" ]
+
+    if (is_msan) {
+      public_configs = [ ":no_asm_config" ]
+    } else if (current_cpu == "x64") {
+      if (is_mac) {
+        sources += crypto_sources_mac_x86_64
+      } else if (is_linux || is_chromeos || is_android) {
+        sources += crypto_sources_linux_x86_64
+      } else {
+        public_configs = [ ":no_asm_config" ]
+      }
+    } else if (current_cpu == "x86") {
+      if (is_mac) {
+        sources += crypto_sources_mac_x86
+      } else if (is_linux || is_chromeos || is_android) {
+        sources += crypto_sources_linux_x86
+      } else {
+        public_configs = [ ":no_asm_config" ]
+      }
+    } else {
+      public_configs = [ ":no_asm_config" ]
+    }
+  }
+
+
+component("boringssl") {
+  sources = all_sources
+  public = all_headers
+  friend = [ ":*" ]
+  deps = [ "//third_party/boringssl/src/third_party/fiat:fiat_license" ]
+
+  # Mark boringssl_asm as a public dependency so the OPENSSL_NO_ASM
+  # config is forwarded to callers. In particular, boringssl_crypto_tests
+  # requires it.
+  public_deps = [ ":boringssl_asm" ]
+
+  public_configs = [ ":external_config" ]
+  configs += [ ":component_config" ]
+
+  #configs -= [ "//build/config/compiler:chromium_code" ]
+  #configs += [ "//build/config/compiler:no_chromium_code" ]
+
+  if (is_nacl) {
+    deps += [ "//native_client_sdk/src/libraries/nacl_io" ]
+  }
+
+  if (!is_debug && !optimize_for_size) {
+    #configs -= [ "//build/config/compiler:default_optimization" ]
+    #configs += [ "//build/config/compiler:optimize_max" ]
+  }
+}
+

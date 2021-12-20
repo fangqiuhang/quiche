@@ -1,0 +1,5 @@
+group("quiche_impl") {
+    deps = [
+        "net/third_party/quiche/"
+    ]
+}

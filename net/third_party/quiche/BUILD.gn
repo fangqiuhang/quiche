@@ -2,9 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//build/config/chromeos/ui_mode.gni")
-import("//testing/libfuzzer/fuzzer_test.gni")
-import("//third_party/protobuf/proto_library.gni")
+#import("//build/config/chromeos/ui_mode.gni")
+#import("//testing/libfuzzer/fuzzer_test.gni")
+import("//base/base.gni")
 
 config("quiche_config") {
   include_dirs = [
@@ -690,7 +690,7 @@ proto_library("net_quic_proto") {
 
   defines = [ "NET_IMPLEMENTATION" ]
 
-  extra_configs = [ "//build/config/compiler:wexit_time_destructors" ]
+  #extra_configs = [ "//build/config/compiler:wexit_time_destructors" ]
 }
 
 proto_library("net_quic_test_tools_proto") {
@@ -705,7 +705,7 @@ proto_library("net_quic_test_tools_proto") {
 
   defines = [ "NET_IMPLEMENTATION" ]
 
-  extra_configs = [ "//build/config/compiler:wexit_time_destructors" ]
+  #extra_configs = [ "//build/config/compiler:wexit_time_destructors" ]
 }
 
 if (is_linux || is_chromeos) {
@@ -839,7 +839,7 @@ if (is_linux || is_chromeos) {
       "//net:epoll_quic_tools",
       "//net:simple_quic_tools",
       "//third_party/boringssl",
-      "//third_party/protobuf:protobuf_lite",
+      #"//third_party/protobuf:protobuf_lite",
     ]
   }
 
@@ -852,7 +852,7 @@ if (is_linux || is_chromeos) {
       "//net:epoll_quic_tools",
       "//net:simple_quic_tools",
       "//third_party/boringssl",
-      "//third_party/protobuf:protobuf_lite",
+      #"//third_party/protobuf:protobuf_lite",
     ]
   }
 
@@ -865,7 +865,7 @@ if (is_linux || is_chromeos) {
       "//net:epoll_quic_tools",
       "//net:simple_quic_tools",
       "//third_party/boringssl",
-      "//third_party/protobuf:protobuf_lite",
+      #"//third_party/protobuf:protobuf_lite",
     ]
   }
 }
@@ -881,8 +881,8 @@ source_set("epoll_server_test_tools_core") {
     "//base",
     "//net",
     "//net:test_support",
-    "//testing/gmock",
-    "//testing/gtest",
+    #"//testing/gmock",
+    #"//testing/gtest",
   ]
 }
 
@@ -896,8 +896,8 @@ source_set("quiche_test_tools_core") {
   ]
   deps = [
     "//net",
-    "//testing/gmock",
-    "//testing/gtest",
+    #"//testing/gmock",
+    #"//testing/gtest",
   ]
 }
 
@@ -1051,16 +1051,16 @@ source_set("quic_test_tools_core") {
   deps = [
     ":quiche_file_utils",
     "//base",
-    "//crypto:test_support",
+    #"//crypto:test_support",
     "//net",
     "//net:quiche_test_tools",
     "//net:simple_quic_tools",
     "//net:test_support",
-    "//testing/gmock",
-    "//testing/gtest",
+    #"//testing/gmock",
+    #"//testing/gtest",
     "//third_party/boringssl",
-    "//third_party/protobuf:protobuf_lite",
-    "//third_party/quic_trace:quic_trace_proto",
+    #"//third_party/protobuf:protobuf_lite",
+    #"//third_party/quic_trace:quic_trace_proto",
   ]
 
   if (is_linux || is_chromeos) {
@@ -1147,10 +1147,10 @@ source_set("simple_quic_tools_core") {
   deps = [
     ":quiche_file_utils",
     "//base",
-    "//base/third_party/dynamic_annotations",
+    #"//base/third_party/dynamic_annotations",
     "//net",
-    "//third_party/protobuf:protobuf_lite",
-    "//url",
+    #"//third_party/protobuf:protobuf_lite",
+    #"//url",
   ]
 }
 
@@ -1184,11 +1184,11 @@ if (!is_ios) {
     deps = [
       ":quiche_file_utils",
       "//base",
-      "//build/win:default_exe_manifest",
+      #"//build/win:default_exe_manifest",
       "//net",
       "//net:simple_quic_tools",
       "//third_party/boringssl",
-      "//third_party/protobuf:protobuf_lite",
+      #"//third_party/protobuf:protobuf_lite",
     ]
   }
 
@@ -1196,11 +1196,11 @@ if (!is_ios) {
     sources = [ "src/quic/core/crypto/crypto_message_printer_bin.cc" ]
     deps = [
       "//base",
-      "//build/win:default_exe_manifest",
+      #"//build/win:default_exe_manifest",
       "//net",
       "//net:simple_quic_tools",
       "//third_party/boringssl",
-      "//third_party/protobuf:protobuf_lite",
+      #"//third_party/protobuf:protobuf_lite",
     ]
   }
 
@@ -1208,11 +1208,11 @@ if (!is_ios) {
     sources = [ "src/quic/tools/quic_reject_reason_decoder_bin.cc" ]
     deps = [
       "//base",
-      "//build/win:default_exe_manifest",
+      #"//build/win:default_exe_manifest",
       "//net",
       "//net:simple_quic_tools",
       "//third_party/boringssl",
-      "//third_party/protobuf:protobuf_lite",
+      #"//third_party/protobuf:protobuf_lite",
     ]
   }
 
@@ -1224,7 +1224,7 @@ if (!is_ios) {
       "//net",
       "//net:quic_test_tools",
       "//net:simple_quic_tools",
-      "//testing/gmock",
+      #"//testing/gmock",
     ]
   }
 }
@@ -1522,8 +1522,8 @@ source_set("quiche_tests") {
     "//net:quiche_test_tools",
     "//net:simple_quic_tools",
     "//net:spdy_test_tools",
-    "//testing/gmock",
-    "//testing/gtest",
+    #"//testing/gmock",
+    #"//testing/gtest",
   ]
   public_deps = []
 
@@ -1552,74 +1552,4 @@ source_set("quiche_tests") {
       "//net:epoll_server_test_tools",
     ]
   }
-}
-
-fuzzer_test("net_quic_framer_fuzzer") {
-  sources = [ "src/quic/test_tools/fuzzing/quic_framer_fuzzer.cc" ]
-
-  deps = [
-    "//net",
-    "//net:net_fuzzer_test_support",
-    "//net:quic_test_tools",
-    "//net:test_support",
-    "//net/data/ssl/certificates:generate_fuzzer_cert_includes",
-  ]
-}
-
-fuzzer_test("net_quic_framer_process_data_packet_fuzzer") {
-  sources = [
-    "src/quic/test_tools/fuzzing/quic_framer_process_data_packet_fuzzer.cc",
-  ]
-
-  deps = [
-    "//net",
-    "//net:net_fuzzer_test_support",
-    "//net:quic_test_tools",
-    "//net:test_support",
-    "//net/data/ssl/certificates:generate_fuzzer_cert_includes",
-  ]
-}
-
-fuzzer_test("net_qpack_decoder_fuzzer") {
-  sources = [ "src/quic/core/qpack/fuzzer/qpack_decoder_fuzzer.cc" ]
-  deps = [
-    "//base",
-    "//net",
-    "//net:net_fuzzer_test_support",
-    "//net:quic_test_tools",
-    "//net:test_support",
-  ]
-}
-
-fuzzer_test("net_qpack_encoder_stream_receiver_fuzzer") {
-  sources =
-      [ "src/quic/core/qpack/fuzzer/qpack_encoder_stream_receiver_fuzzer.cc" ]
-  deps = [
-    "//base",
-    "//net",
-    "//net:net_fuzzer_test_support",
-  ]
-}
-
-fuzzer_test("net_qpack_encoder_stream_sender_fuzzer") {
-  sources =
-      [ "src/quic/core/qpack/fuzzer/qpack_encoder_stream_sender_fuzzer.cc" ]
-  deps = [
-    "//base",
-    "//net",
-    "//net:net_fuzzer_test_support",
-    "//net:quic_test_tools",
-    "//net:test_support",
-  ]
-}
-
-fuzzer_test("net_qpack_round_trip_fuzzer") {
-  sources = [ "src/quic/core/qpack/fuzzer/qpack_round_trip_fuzzer.cc" ]
-  deps = [
-    "//base",
-    "//net",
-    "//net:net_fuzzer_test_support",
-    "//net:quic_test_tools",
-    "//net:test_support",
-  ]
 }
