@@ -1,0 +1,20 @@
+component("base") {
+  sources = [
+    #"version.cc",
+    #"version.h",
+    #"vlog.cc",
+    #"vlog.h",
+  ]
+  all_dependent_configs = []
+  defines = []
+  data = []
+  data_deps = []
+  libs = []
+  frameworks = []
+  deps = [
+    #"//base/allocator",
+  ]
+  public_deps = [
+    "//third_party/abseil-cpp:absl",
+  ]
+}

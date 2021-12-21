@@ -22,14 +22,3 @@ absl_source_set("cleanup") {
     "//third_party/abseil-cpp/absl/base:core_headers",
   ]
 }
-
-absl_source_set("cleanup_test") {
-  testonly = true
-  sources = [ "cleanup_test.cc" ]
-  deps = [
-    ":cleanup",
-    "//third_party/abseil-cpp/absl/base:config",
-    "//third_party/abseil-cpp/absl/utility",
-    "//third_party/googletest:gtest",
-  ]
-}

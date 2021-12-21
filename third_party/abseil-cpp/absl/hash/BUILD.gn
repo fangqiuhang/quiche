@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//build_overrides/build.gni")
+#import("//build_overrides/build.gni")
 import("//third_party/abseil-cpp/absl.gni")
 
 absl_source_set("hash") {
@@ -24,18 +24,6 @@ absl_source_set("hash") {
     "//third_party/abseil-cpp/absl/types:optional",
     "//third_party/abseil-cpp/absl/types:variant",
     "//third_party/abseil-cpp/absl/utility",
-  ]
-}
-
-absl_source_set("hash_testing") {
-  testonly = true
-  public = [ "hash_testing.h" ]
-  deps = [
-    ":spy_hash_state",
-    "//third_party/abseil-cpp/absl/meta:type_traits",
-    "//third_party/abseil-cpp/absl/strings",
-    "//third_party/abseil-cpp/absl/types:variant",
-    "//third_party/googletest:gtest",
   ]
 }
 
@@ -70,15 +58,4 @@ absl_source_set("low_level_hash") {
     "//third_party/abseil-cpp/absl/numeric:int128",
   ]
   visibility = [ ":*" ]
-}
-
-absl_source_set("low_level_hash_test") {
-  testonly = true
-  sources = [ "internal/low_level_hash_test.cc" ]
-  deps = [
-    ":low_level_hash",
-    "//third_party/abseil-cpp/absl/strings",
-    "//third_party/googletest:gtest",
-    "//third_party/googletest:gmock",
-  ]
 }

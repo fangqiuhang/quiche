@@ -37,7 +37,7 @@ config("internal_config") {
     "BORINGSSL_NO_STATIC_INITIALIZER",
     "OPENSSL_SMALL",
   ]
-  if (is_posix || is_fuchsia) {
+  if (is_posix) {
     defines += [ "_XOPEN_SOURCE=700" ]
   }
 }
@@ -61,9 +61,7 @@ all_headers = crypto_headers + ssl_headers
     asmflags = []
     include_dirs = [ "src/include" ]
 
-    if (is_msan) {
-      public_configs = [ ":no_asm_config" ]
-    } else if (current_cpu == "x64") {
+    if (current_cpu == "x64") {
       if (is_mac) {
         sources += crypto_sources_mac_x86_64
       } else if (is_linux || is_chromeos || is_android) {
@@ -97,18 +95,9 @@ component("boringssl") {
   public_deps = [ ":boringssl_asm" ]
 
   public_configs = [ ":external_config" ]
-  configs += [ ":component_config" ]
+  configs = [ ":component_config" ]
 
   #configs -= [ "//build/config/compiler:chromium_code" ]
   #configs += [ "//build/config/compiler:no_chromium_code" ]
-
-  if (is_nacl) {
-    deps += [ "//native_client_sdk/src/libraries/nacl_io" ]
-  }
-
-  if (!is_debug && !optimize_for_size) {
-    #configs -= [ "//build/config/compiler:default_optimization" ]
-    #configs += [ "//build/config/compiler:optimize_max" ]
-  }
 }
 

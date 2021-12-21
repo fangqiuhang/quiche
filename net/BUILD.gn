@@ -72,7 +72,7 @@ component("net") {
     "quiche/common/platform/impl/quiche_flags_impl.h",
   ]
 
-  if (is_posix || is_fuchsia) {
+  if (is_posix) {
     sources += [ "base/net_errors_posix.cc" ]
   }
 
@@ -133,7 +133,7 @@ source_set("net_deps") {
     "//base",
     #"//base/third_party/dynamic_annotations",
     #"//net/base/registry_controlled_domains",
-    "//third_party/protobuf:protobuf_lite",
+    #"//third_party/protobuf:protobuf_lite",
     #"//third_party/zlib",
     #"//url:buildflags",
   ]
@@ -151,8 +151,8 @@ source_set("net_public_deps") {
   ]
 
   public_deps = [
-    ":buildflags",
-    ":net_nqe_proto",
+    #":buildflags",
+    #":net_nqe_proto",
     #"//base",
     #"//crypto",
     #"//crypto:platform",
@@ -166,6 +166,24 @@ source_set("net_public_deps") {
 }
 
 if (is_linux || is_chromeos) {
+
+  static_library("epoll_server") {
+    sources = [
+      "tools/epoll_server/platform/impl/epoll_bug_impl.h",
+      "tools/epoll_server/platform/impl/epoll_export_impl.h",
+      "tools/epoll_server/platform/impl/epoll_logging_impl.h",
+      "tools/epoll_server/platform/impl/epoll_ptr_util_impl.h",
+      "tools/epoll_server/platform/impl/epoll_thread_impl.h",
+      "tools/epoll_server/platform/impl/epoll_time_impl.h",
+    ]
+    deps = [
+      ":net",
+      "//base",
+    ]
+    public_deps = [ "//net/third_party/quiche:epoll_server_core" ]
+    #allow_circular_includes_from =
+    #    [ "//net/third_party/quiche:epoll_server_core" ]
+  }
 
   source_set("epoll_quic_tools") {
     testonly = true
@@ -189,6 +207,39 @@ if (is_linux || is_chromeos) {
     allow_circular_includes_from =
         [ "//net/third_party/quiche:epoll_quic_tools_core" ]
   }
+}
+
+source_set("epoll_server_test_tools") {
+  testonly = true
+  sources = [
+    "tools/epoll_server/platform/impl/epoll_address_test_utils_impl.h",
+    "tools/epoll_server/platform/impl/epoll_expect_bug_impl.h",
+    "tools/epoll_server/platform/impl/epoll_test_impl.h",
+  ]
+  deps = [
+    ":net",
+    #":test_support",
+    "//base",
+    #"//testing/gmock",
+    #"//testing/gtest",
+  ]
+  public_deps = [ "//net/third_party/quiche:epoll_server_test_tools_core" ]
+  allow_circular_includes_from =
+      [ "//net/third_party/quiche:epoll_server_test_tools_core" ]
+}
+
+source_set("spdy_test_tools") {
+  testonly = true
+  sources = [
+    "spdy/fuzzing/hpack_fuzz_util.cc",
+    "spdy/fuzzing/hpack_fuzz_util.h",
+  ]
+  deps = [
+    ":net",
+    "//base",
+    #"//testing/gmock",
+    #"//testing/gtest",
+  ]
 }
 
 source_set("quiche_test_tools") {
@@ -236,7 +287,7 @@ source_set("quic_test_tools") {
     ":net",
     ":quiche_test_tools",
     ":simple_quic_tools",
-    ":test_support",
+    #":test_support",
     "//base",
     #"//crypto:test_support",
     #"//testing/gmock",
@@ -251,4 +302,43 @@ source_set("quic_test_tools") {
   ]
   allow_circular_includes_from =
       [ "//net/third_party/quiche:quic_test_tools_core" ]
+}
+
+source_set("simple_quic_tools") {
+  sources = [
+    "quic/platform/impl/quic_default_proof_providers_impl.cc",
+    "quic/platform/impl/quic_default_proof_providers_impl.h",
+    "quic/platform/impl/quic_system_event_loop_impl.h",
+    "tools/quic/quic_client_message_loop_network_helper.cc",
+    "tools/quic/quic_client_message_loop_network_helper.h",
+    "tools/quic/quic_http_proxy_backend.cc",
+    "tools/quic/quic_http_proxy_backend.h",
+    "tools/quic/quic_http_proxy_backend_stream.cc",
+    "tools/quic/quic_http_proxy_backend_stream.h",
+    "tools/quic/quic_simple_client.cc",
+    "tools/quic/quic_simple_client.h",
+    "tools/quic/quic_simple_server.cc",
+    "tools/quic/quic_simple_server.h",
+    "tools/quic/quic_simple_server_packet_writer.cc",
+    "tools/quic/quic_simple_server_packet_writer.h",
+    "tools/quic/quic_simple_server_session_helper.cc",
+    "tools/quic/quic_simple_server_session_helper.h",
+    "tools/quic/quic_simple_server_socket.cc",
+    "tools/quic/quic_simple_server_socket.h",
+    "tools/quic/quic_transport_simple_server.cc",
+    "tools/quic/quic_transport_simple_server.h",
+    "tools/quic/synchronous_host_resolver.cc",
+    "tools/quic/synchronous_host_resolver.h",
+  ]
+  deps = [
+    ":net",
+    "//base",
+    #"//base/third_party/dynamic_annotations",
+    "//net/third_party/quiche:simple_quic_tools_core",
+    #"//third_party/protobuf:protobuf_lite",
+    #"//url",
+  ]
+  public_deps = [ "//net/third_party/quiche:simple_quic_tools_core" ]
+  allow_circular_includes_from =
+      [ "//net/third_party/quiche:simple_quic_tools_core" ]
 }

@@ -880,7 +880,7 @@ source_set("epoll_server_test_tools_core") {
   deps = [
     "//base",
     "//net",
-    "//net:test_support",
+    #"//net:test_support",
     #"//testing/gmock",
     #"//testing/gtest",
   ]
@@ -1055,7 +1055,7 @@ source_set("quic_test_tools_core") {
     "//net",
     "//net:quiche_test_tools",
     "//net:simple_quic_tools",
-    "//net:test_support",
+    #"//net:test_support",
     #"//testing/gmock",
     #"//testing/gtest",
     "//third_party/boringssl",
