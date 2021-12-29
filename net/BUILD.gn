@@ -73,7 +73,7 @@ component("net") {
   ]
 
   if (is_posix) {
-    sources += [ "base/net_errors_posix.cc" ]
+    #sources += [ "base/net_errors_posix.cc" ]
   }
 
   defines = []
@@ -309,26 +309,6 @@ source_set("simple_quic_tools") {
     "quic/platform/impl/quic_default_proof_providers_impl.cc",
     "quic/platform/impl/quic_default_proof_providers_impl.h",
     "quic/platform/impl/quic_system_event_loop_impl.h",
-    "tools/quic/quic_client_message_loop_network_helper.cc",
-    "tools/quic/quic_client_message_loop_network_helper.h",
-    "tools/quic/quic_http_proxy_backend.cc",
-    "tools/quic/quic_http_proxy_backend.h",
-    "tools/quic/quic_http_proxy_backend_stream.cc",
-    "tools/quic/quic_http_proxy_backend_stream.h",
-    "tools/quic/quic_simple_client.cc",
-    "tools/quic/quic_simple_client.h",
-    "tools/quic/quic_simple_server.cc",
-    "tools/quic/quic_simple_server.h",
-    "tools/quic/quic_simple_server_packet_writer.cc",
-    "tools/quic/quic_simple_server_packet_writer.h",
-    "tools/quic/quic_simple_server_session_helper.cc",
-    "tools/quic/quic_simple_server_session_helper.h",
-    "tools/quic/quic_simple_server_socket.cc",
-    "tools/quic/quic_simple_server_socket.h",
-    "tools/quic/quic_transport_simple_server.cc",
-    "tools/quic/quic_transport_simple_server.h",
-    "tools/quic/synchronous_host_resolver.cc",
-    "tools/quic/synchronous_host_resolver.h",
   ]
   deps = [
     ":net",

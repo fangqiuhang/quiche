@@ -29,11 +29,12 @@ declare_args() {
 
 declare_args() {
   is_component_build = is_debug && current_os != "ios"
-  is_clang = current_os != "linux" ||
-             (current_cpu != "s390x" && current_cpu != "s390" &&
-              current_cpu != "ppc64" && current_cpu != "ppc" &&
-              current_cpu != "mips" && current_cpu != "mips64" &&
-              current_cpu != "riscv64")
+  #is_clang = current_os != "linux" ||
+  #           (current_cpu != "s390x" && current_cpu != "s390" &&
+  #            current_cpu != "ppc64" && current_cpu != "ppc" &&
+  #            current_cpu != "mips" && current_cpu != "mips64" &&
+  #            current_cpu != "riscv64")
+  is_clang = false
 }
 
 

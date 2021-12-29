@@ -4,7 +4,8 @@
 
 #import("//build/config/chromeos/ui_mode.gni")
 #import("//testing/libfuzzer/fuzzer_test.gni")
-import("//base/base.gni")
+#import("//base/base.gni")
+import("//src/base/proto_library.gni")
 
 config("quiche_config") {
   include_dirs = [
