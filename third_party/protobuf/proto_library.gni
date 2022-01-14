@@ -132,13 +132,13 @@
 #    ]
 #  }
 
-import("//build/config/sanitizers/sanitizers.gni")
-import("//build/toolchain/kythe.gni")
+#import("//build/config/sanitizers/sanitizers.gni")
+#import("//build/toolchain/kythe.gni")
 
 declare_args() {
   # Allows subprojects to omit javascript dependencies (e.g.) closure_compiler
   # and google-closure-library.
-  enable_js_protobuf = true
+  enable_js_protobuf = false
 }
 
 if (enable_js_protobuf) {
@@ -168,7 +168,7 @@ template("proto_library") {
   if (defined(invoker.generate_python)) {
     generate_python = invoker.generate_python
   } else {
-    generate_python = true
+    generate_python = false
   }
 
   if (defined(invoker.generate_javascript)) {
@@ -360,9 +360,9 @@ template("proto_library") {
         "--cc-out-dir",
         rel_cc_out_dir,
       ]
-      if (enable_kythe_annotations) {
-        args += [ "--enable-kythe-annotation" ]
-      }
+      #if (enable_kythe_annotations) {
+      #  args += [ "--enable-kythe-annotation" ]
+      #}
       if (defined(invoker.cc_generator_options)) {
         args += [
           "--cc-options",
@@ -526,8 +526,8 @@ template("proto_library") {
       # Remove Sanitizer and coverage instrumentation for a performance boost when
       # fuzzing, since the only fuzzers that use protobuf are libprotobuf-mutator
       # based fuzzers, and they don't actually target protobuf code.
-      configs -= not_fuzzed_remove_configs
-      configs += [ "//build/config/sanitizers:not_fuzzed" ]
+      #configs -= not_fuzzed_remove_configs
+      #configs += [ "//build/config/sanitizers:not_fuzzed" ]
     }
 
     public_configs = [

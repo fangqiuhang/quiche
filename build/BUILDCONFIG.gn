@@ -24,25 +24,56 @@ if (current_os == "") {
 # =============================================================================
 
 declare_args() {
-  is_debug = false
-}
-
-declare_args() {
-  is_component_build = is_debug && current_os != "ios"
+  is_official_build = false
   #is_clang = current_os != "linux" ||
   #           (current_cpu != "s390x" && current_cpu != "s390" &&
   #            current_cpu != "ppc64" && current_cpu != "ppc" &&
   #            current_cpu != "mips" && current_cpu != "mips64" &&
   #            current_cpu != "riscv64")
   is_clang = false
+
+  # Allows the path to a custom target toolchain to be injected as a single
+  # argument, and set as the default toolchain.
+  custom_toolchain = ""
+
+  # This should not normally be set as a build argument.  It's here so that
+  # every toolchain can pass through the "global" value via toolchain_args().
+  host_toolchain = ""
 }
+
+declare_args() {
+  # Debug build. Enabling official builds automatically sets is_debug to false.
+  is_debug = !is_official_build
+}
+
+declare_args() {
+  is_component_build = is_debug && current_os != "ios"
+}
+
+assert(!(is_debug && is_official_build), "Can't do official debug builds")
 
 
 # ==============================================================================
 # TOOLCHAIN SETUP
 # ==============================================================================
 
-set_default_toolchain("//build/toolchain:gcc")
+if (host_toolchain == "") {
+  # This should only happen in the top-level context.
+  # In a specific toolchain context, the toolchain_args()
+  # block should have propagated a value down.
+  # TODO(dpranke): Add some sort of assert here that verifies that
+  # no toolchain omitted host_toolchain from its toolchain_args().
+
+  host_toolchain = "//build/toolchain:gcc"
+}
+
+_default_toolchain = host_toolchain
+
+if (custom_toolchain != "") {
+  set_default_toolchain(custom_toolchain)
+} else if (_default_toolchain != "") {
+  set_default_toolchain(_default_toolchain)
+}
 
 
 # =============================================================================
@@ -70,6 +101,8 @@ is_posix = !is_win
 
 # All binary targets will get this list of configs by default.
 _shared_binary_target_configs = [ "//build:compiler_defaults" ]
+
+is_component_build = false
 
 # Apply that default list to the binary target types.
 set_defaults("executable") {

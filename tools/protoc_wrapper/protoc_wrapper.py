@@ -190,6 +190,8 @@ def main(argv):
     with open(options.descriptor_set_dependency_file, 'rb') as f:
       dependency_file_data = f.read().decode('utf-8')
 
+  print("protoc cmd: ", protoc_cmd)
+
   ret = subprocess.call(protoc_cmd)
   if ret != 0:
     if ret <= -100:

@@ -5,7 +5,8 @@
 #import("//build/config/chromeos/ui_mode.gni")
 #import("//testing/libfuzzer/fuzzer_test.gni")
 #import("//base/base.gni")
-import("//src/base/proto_library.gni")
+#import("//src/base/proto_library.gni")
+import("//third_party/protobuf/proto_library.gni")
 
 config("quiche_config") {
   include_dirs = [
@@ -682,7 +683,7 @@ proto_library("net_quic_proto") {
     "src/quic/core/proto/source_address_token.proto",
   ]
   cc_generator_options = "dllexport_decl=NET_EXPORT_PRIVATE:"
-  cc_include = "net/base/net_export.h"
+  #cc_include = "net/base/net_export.h"
   component_build_force_source_set = true
 
   proto_in_dir = "src"
@@ -699,7 +700,7 @@ proto_library("net_quic_test_tools_proto") {
 
   sources = [ "src/quic/test_tools/send_algorithm_test_result.proto" ]
   cc_generator_options = "dllexport_decl=NET_EXPORT_PRIVATE:"
-  cc_include = "net/base/net_export.h"
+  #cc_include = "net/base/net_export.h"
   component_build_force_source_set = true
 
   deps = [ "//net:net_export_header" ]
@@ -773,7 +774,7 @@ if (is_linux || is_chromeos) {
       "//net",
       "//net:epoll_quic_tools",
       "//net:epoll_server",
-      "//net:quic_test_tools",
+      #"//net:quic_test_tools",
       "//net:simple_quic_tools",
       "//third_party/boringssl",
     ]

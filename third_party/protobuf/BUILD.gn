@@ -1,8 +1,8 @@
 # Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-import("//build/config/linux/gtk/gtk.gni")
-import("//build/config/sanitizers/sanitizers.gni")
+#import("//build/config/linux/gtk/gtk.gni")
+#import("//build/config/sanitizers/sanitizers.gni")
 
 # Includes default args like 'enable_js_protobuf'.
 import("proto_library.gni")
@@ -154,29 +154,12 @@ if (is_win) {
   ]
 }
 
-# Do not allow libprotobuf_lite to be dynamically linked on Linux.  Later
-# versions of Ubuntu like Xenial and Yakkety link in the system
-# libprotobuf_lite by the following dependency chain: chrome -> gtk ->
-# libmirclient -> libmirprotobuf -> libprotobuf-lite.  Trying to load
-# the system libprotobuf-lite after already having loaded the libprotobuf_lite
-# component will result in an immediate crash. (crbug.com/700120)
-if (is_component_build && use_gtk) {
-  shared_library("mirclient") {
-    inputs = [ "mirclient.map" ]
-    sources = [ "mirclient.cc" ]
-    ldflags =
-        [ "-Wl,--version-script=" +
-          rebase_path("//third_party/protobuf/mirclient.map", root_build_dir) ]
-    output_extension = "so.9"
-  }
-}
-
 component("protobuf_lite") {
   sources = protobuf_lite_sources
 
-  configs -= [ "//build/config/compiler:chromium_code" ]
-  configs += [
-    "//build/config/compiler:no_chromium_code",
+  #configs -= [ "//build/config/compiler:chromium_code" ]
+  configs = [
+    #"//build/config/compiler:no_chromium_code",
 
     # Must be after no_chromium_code for warning flags to be ordered
     # correctly.
@@ -186,8 +169,8 @@ component("protobuf_lite") {
   # Remove Sanitizers and coverage for a performance boost when fuzzing. This is
   # OK because the only fuzzers that use protobuf are libprotobuf-mutator based
   # fuzzers, and they don't actually target the protobuf code, they just use it.
-  configs -= not_fuzzed_remove_configs
-  configs += [ "//build/config/sanitizers:not_fuzzed" ]
+  #configs -= not_fuzzed_remove_configs
+  #configs += [ "//build/config/sanitizers:not_fuzzed" ]
 
   if (is_win) {
     configs -= [ "//build/config/win:lean_and_mean" ]
@@ -200,10 +183,6 @@ component("protobuf_lite") {
   }
 
   cflags = protobuf_lite_cflags
-
-  if (is_component_build && use_gtk) {
-    deps = [ ":mirclient" ]
-  }
 
   # Required for component builds. See http://crbug.com/172800.
   if (is_component_build) {
@@ -383,15 +362,15 @@ static_library("protobuf_full") {
               "src/google/protobuf/wrappers.pb.h",
             ]
 
-  deps = [ "//third_party/zlib" ]
+  #deps = [ "//third_party/zlib" ]
 
   if (is_android) {
     libs = [ "log" ]  # Used by src/google/protobuf/stubs/common.cc
   }
 
-  configs -= [ "//build/config/compiler:chromium_code" ]
+  #configs -= [ "//build/config/compiler:chromium_code" ]
   configs += [
-    "//build/config/compiler:no_chromium_code",
+    #"//build/config/compiler:no_chromium_code",
 
     # Must be after no_chromium_code for warning flags to be ordered
     # correctly.
@@ -401,8 +380,8 @@ static_library("protobuf_full") {
   # Remove coverage and Sanitizers other than ASan for a performance boost when
   # fuzzing. ASan can't be removed here because of a bug preventing unsanitized
   # code from using libc++, which protobuf_full uses.
-  configs -= not_fuzzed_remove_nonasan_configs
-  configs += [ "//build/config/sanitizers:not_fuzzed" ]
+  #configs -= not_fuzzed_remove_nonasan_configs
+  #configs += [ "//build/config/sanitizers:not_fuzzed" ]
 
   if (is_win) {
     configs -= [ "//build/config/win:lean_and_mean" ]
@@ -589,9 +568,9 @@ if (current_toolchain == host_toolchain) {
       "src/google/protobuf/compiler/zip_writer.h",
     ]
 
-    configs -= [ "//build/config/compiler:chromium_code" ]
+    #configs -= [ "//build/config/compiler:chromium_code" ]
     configs += [
-      "//build/config/compiler:no_chromium_code",
+      #"//build/config/compiler:no_chromium_code",
 
       # Must be after no_chromium_code for warning flags to be ordered
       # correctly.
@@ -613,8 +592,8 @@ if (current_toolchain == host_toolchain) {
   executable("protoc") {
     sources = [ "src/google/protobuf/compiler/main.cc" ]
 
-    configs -= [ "//build/config/compiler:chromium_code" ]
-    configs += [ "//build/config/compiler:no_chromium_code" ]
+    #configs -= [ "//build/config/compiler:chromium_code" ]
+    #configs += [ "//build/config/compiler:no_chromium_code" ]
 
     cflags = protobuf_lite_cflags
 
@@ -622,7 +601,7 @@ if (current_toolchain == host_toolchain) {
       ":protoc_lib",
 
       # Default manifest on Windows (a no-op elsewhere).
-      "//build/win:default_exe_manifest",
+      #"//build/win:default_exe_manifest",
     ]
   }
 }

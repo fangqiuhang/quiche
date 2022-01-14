@@ -10,6 +10,7 @@
 - `net/quiche/common/platform/impl/`
 - `net/third_party/quiche/overrides/quiche_platform_impl/`
 - `third_party/abseil-cpp/`
+- `third_party/protobuf/`
 - `tools/protoc_wrapper`
 
 These directories and files are quiche's dependencies from chromium, whose
