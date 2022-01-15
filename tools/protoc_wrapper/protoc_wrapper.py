@@ -126,7 +126,8 @@ def main(argv):
   options = parser.parse_args(argv)
 
   proto_dir = os.path.relpath(options.proto_in_dir)
-  protoc_cmd = [os.path.realpath(options.protoc)]
+  #protoc_cmd = [os.path.realpath(options.protoc)]
+  protoc_cmd = [ "protoc" ]
 
   protos = options.protos
   headers = []
