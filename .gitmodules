@@ -1,0 +1,38 @@
+# About this file [https://git-scm.com/docs/gitmodules].
+
+[submodule "third_party/abseil-cpp/src"]
+	path = third_party/abseil-cpp/src
+	url = https://github.com/abseil/abseil-cpp.git
+	branch = master
+[submodule "third_party/boringssl/src"]
+	path = third_party/boringssl/src
+	url = https://github.com/google/boringssl.git
+	branch = main
+[submodule "third_party/googletest/src"]
+	path = third_party/googletest/src
+	url = https://github.com/google/googletest.git
+	branch = main
+[submodule "third_party/googleurl/src"]
+	path = third_party/googleurl/src
+	url = https://quiche.googlesource.com/googleurl
+	branch = master
+[submodule "third_party/protobuf/src"]
+	path = third_party/protobuf/src
+	url = https://github.com/protocolbuffers/protobuf.git
+	branch = main
+[submodule "third_party/quiche/src"]
+	path = third_party/quiche/src
+	url = https://github.com/google/quiche.git
+	branch = main
+[submodule "third_party/quic_trace/src"]
+	path = third_party/quic_trace/src
+	url = https://github.com/google/quic-trace.git
+	branch = master
+[submodule "third_party/re2/src"]
+	path = third_party/re2/src
+	url = https://github.com/google/re2.git
+	branch = main
+[submodule "third_party/zlib/src"]
+	path = third_party/zlib/src
+	url = https://github.com/madler/zlib.git
+	branch = master
