@@ -17,6 +17,18 @@ These directories and files are quiche's dependencies from chromium, whose
 headers included by quiche.
 In order to avoid revising quiche, keep their structures.
 
-# Dependencies
+# Build
 
-- zlib
+## Tools
+- ninja
+- gn
+- gcc
+- gcc-c++
+- protoc
+  - Download from: https://github.com/protocolbuffers/protobuf/releases
+  - Just choose `protoc-{VERSION}-linux-x86_64.zip` for linux
+  - Install: `unzip protoc-{VERSION}-linux-x86_64.zip && sudo mv bin/* /usr/local/bin/ && sudo mv include/* /usr/local/include/`
+
+## Dependencies
+
+- zlib-dev
