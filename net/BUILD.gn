@@ -157,7 +157,7 @@ source_set("net_public_deps") {
     #"//crypto",
     #"//crypto:platform",
     "//net/third_party/quiche:net_quic_proto",
-    "//net/third_party/quiche:net_quic_test_tools_proto",
+    #"//net/third_party/quiche:net_quic_test_tools_proto",
     "//net/third_party/quiche:quiche_public_deps",
     #"//net/traffic_annotation",
     "//third_party/boringssl",
@@ -195,7 +195,7 @@ if (is_linux || is_chromeos) {
     ]
     deps = [
       #":epoll_server",
-      #":net",
+      ":net",
       ":simple_quic_tools",
       #"//base",
       #"//base/third_party/dynamic_annotations",
@@ -219,7 +219,7 @@ source_set("epoll_server_test_tools") {
   deps = [
     ":net",
     #":test_support",
-    "//base",
+    #"//base",
     #"//testing/gmock",
     #"//testing/gtest",
   ]
@@ -236,7 +236,7 @@ source_set("spdy_test_tools") {
   ]
   deps = [
     ":net",
-    "//base",
+    #"//base",
     #"//testing/gmock",
     #"//testing/gtest",
   ]
@@ -288,12 +288,12 @@ source_set("quic_test_tools") {
     ":quiche_test_tools",
     ":simple_quic_tools",
     #":test_support",
-    "//base",
+    #"//base",
     #"//crypto:test_support",
     #"//testing/gmock",
     #"//testing/gtest",
     "//third_party/boringssl",
-    #"//third_party/protobuf:protobuf_lite",
+    "//third_party/protobuf:protobuf_lite",
     #"//third_party/quic_trace:quic_trace_proto",
   ]
   public_deps = [
@@ -312,7 +312,7 @@ source_set("simple_quic_tools") {
   ]
   deps = [
     ":net",
-    "//base",
+    #"//base",
     #"//base/third_party/dynamic_annotations",
     "//net/third_party/quiche:simple_quic_tools_core",
     #"//third_party/protobuf:protobuf_lite",

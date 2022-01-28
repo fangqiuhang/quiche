@@ -723,7 +723,7 @@ if (is_linux || is_chromeos) {
       "src/epoll_server/simple_epoll_server.h",
     ]
     deps = [
-      "//base",
+      #"//base",
       "//net",
     ]
   }
@@ -752,7 +752,7 @@ if (is_linux || is_chromeos) {
       "src/quic/tools/quic_server.h",
     ]
     deps = [
-      "//base",
+      #"//base",
       "//net",
       "//net:epoll_server",
       "//net:simple_quic_tools",
@@ -770,7 +770,7 @@ if (is_linux || is_chromeos) {
       "src/quic/tools/quic_toy_client.h",
     ]
     deps = [
-      "//base",
+      #"//base",
       "//net",
       "//net:epoll_quic_tools",
       "//net:epoll_server",
@@ -790,7 +790,7 @@ if (is_linux || is_chromeos) {
       "src/quic/tools/quic_toy_server.h",
     ]
     deps = [
-      "//base",
+      #"//base",
       "//net",
       "//net:epoll_quic_tools",
       "//net:epoll_server",
@@ -911,7 +911,7 @@ source_set("quiche_file_utils") {
     "src/common/platform/default/quiche_platform_impl/quiche_file_utils_impl.h",
   ]
   configs += [ ":quiche_config" ]
-  deps = [ "//base" ]
+  #deps = [ "//base" ]
 }
 
 source_set("quic_test_tools_core") {
@@ -1052,7 +1052,7 @@ source_set("quic_test_tools_core") {
 
   deps = [
     ":quiche_file_utils",
-    "//base",
+    #"//base",
     #"//crypto:test_support",
     "//net",
     "//net:quiche_test_tools",
@@ -1148,7 +1148,7 @@ source_set("simple_quic_tools_core") {
   ]
   deps = [
     ":quiche_file_utils",
-    "//base",
+    #"//base",
     #"//base/third_party/dynamic_annotations",
     "//net",
     #"//third_party/protobuf:protobuf_lite",
@@ -1164,7 +1164,7 @@ source_set("quic_client_core") {
   ]
   deps = [
     "//net",
-    "//net:quic_test_tools",
+    #"//net:quic_test_tools",
     "//net:simple_quic_tools",
   ]
 }
@@ -1185,7 +1185,7 @@ if (!is_ios) {
     sources = [ "src/quic/tools/quic_packet_printer_bin.cc" ]
     deps = [
       ":quiche_file_utils",
-      "//base",
+      #"//base",
       #"//build/win:default_exe_manifest",
       "//net",
       "//net:simple_quic_tools",
@@ -1197,7 +1197,7 @@ if (!is_ios) {
   executable("quic_crypto_message_printer") {
     sources = [ "src/quic/core/crypto/crypto_message_printer_bin.cc" ]
     deps = [
-      "//base",
+      #"//base",
       #"//build/win:default_exe_manifest",
       "//net",
       "//net:simple_quic_tools",
@@ -1209,7 +1209,7 @@ if (!is_ios) {
   executable("quic_reject_reason_decoder") {
     sources = [ "src/quic/tools/quic_reject_reason_decoder_bin.cc" ]
     deps = [
-      "//base",
+      #"//base",
       #"//build/win:default_exe_manifest",
       "//net",
       "//net:simple_quic_tools",
@@ -1222,10 +1222,10 @@ if (!is_ios) {
     testonly = true
     sources = [ "src/quic/core/qpack/qpack_offline_decoder_bin.cc" ]
     deps = [
-      "//base",
+      #"//base",
       "//net",
-      "//net:quic_test_tools",
-      "//net:simple_quic_tools",
+      #"//net:quic_test_tools",
+      #"//net:simple_quic_tools",
       #"//testing/gmock",
     ]
   }
