@@ -6,7 +6,7 @@
 #define BASE_GTEST_PROD_UTIL_H_
 
 #include "base/base_export.h"
-#include "testing/gtest/include/gtest/gtest_prod.h"  // nogncheck
+#include "third_party/googletest/src/googletest/include/gtest/gtest_prod.h"
 
 // This is a wrapper for gtest's FRIEND_TEST macro that friends
 // test with all possible prefixes. This is very helpful when changing the test

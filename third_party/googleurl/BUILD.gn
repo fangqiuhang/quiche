@@ -1,0 +1,155 @@
+# Copyright 2013 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+if (is_android) {
+  #import("//build/config/android/rules.gni")
+}
+
+config("googleurl_config") {
+  include_dirs = [ "src" ]
+  cflags_cc += [ "-Wno-return-type" ]
+}
+
+source_set("base") {
+  sources = [
+    "src/base/bits.h",
+    "src/base/compiler_specific.h",
+    "src/base/containers/checked_iterators.h",
+    "src/base/containers/contains.h",
+    "src/base/containers/contiguous_iterator.h",
+    "src/base/containers/span.h",
+    "src/base/containers/util.h",
+    "src/base/cxx20_is_constant_evaluated.h",
+    "src/base/debug/crash_logging.cc",
+    "src/base/debug/crash_logging.h",
+    "src/base/debug/leak_annotations.h",
+    "src/base/functional/identity.h",
+    "src/base/functional/invoke.h",
+    "src/base/functional/not_fn.h",
+    "src/base/memory/raw_ptr_exclusion.h",
+    "src/base/no_destructor.h",
+    "src/base/numerics/checked_math.h",
+    "src/base/numerics/checked_math_impl.h",
+    "src/base/numerics/clamped_math.h",
+    "src/base/numerics/clamped_math_impl.h",
+    "src/base/numerics/safe_conversions.h",
+    "src/base/numerics/safe_conversions_arm_impl.h",
+    "src/base/numerics/safe_conversions_impl.h",
+    "src/base/numerics/safe_math.h",
+    "src/base/numerics/safe_math_arm_impl.h",
+    "src/base/numerics/safe_math_clang_gcc_impl.h",
+    "src/base/numerics/safe_math_shared_impl.h",
+    "src/base/ranges/algorithm.h",
+    "src/base/ranges/functional.h",
+    "src/base/ranges/ranges.h",
+    "src/base/stl_util.h",
+    "src/base/strings/string_number_conversions.h",
+    "src/base/strings/string_piece.h",
+    "src/base/strings/string_util.cc",
+    "src/base/strings/string_util.h",
+    "src/base/strings/string_util_constants.cc",
+    "src/base/strings/string_util_impl_helpers.h",
+    "src/base/strings/string_util_internal.h",
+    "src/base/strings/utf_ostream_operators.cc",
+    "src/base/strings/utf_ostream_operators.h",
+    "src/base/strings/utf_string_conversion_utils.cc",
+    "src/base/strings/utf_string_conversion_utils.h",
+    "src/base/strings/utf_string_conversions.cc",
+    "src/base/strings/utf_string_conversions.h",
+    "src/base/template_util.h",
+    "src/base/types/always_false.h",
+    "src/base/types/supports_ostream_operator.h",
+    "src/base/win/win_handle_types.h",
+  ]
+
+  if (is_win) {
+    sources += [ "src/base/strings/string_util_win.cc" ]
+  } else {
+    sources += [ "src/base/strings/string_util_posix.h" ]
+  }
+
+  public_configs = [ ":googleurl_config" ]
+
+  deps = [ "//third_party/abseil-cpp:absl" ]
+}
+
+source_set("url") {
+  sources = [
+    "src/url/gurl.cc",
+    "src/url/gurl.h",
+    "src/url/third_party/mozilla/url_parse.cc",
+    "src/url/third_party/mozilla/url_parse.h",
+    "src/url/url_canon.cc",
+    "src/url/url_canon.h",
+    "src/url/url_canon_etc.cc",
+    "src/url/url_canon_filesystemurl.cc",
+    "src/url/url_canon_fileurl.cc",
+    "src/url/url_canon_host.cc",
+    "src/url/url_canon_internal.cc",
+    "src/url/url_canon_internal.h",
+    "src/url/url_canon_internal_file.h",
+    "src/url/url_canon_ip.cc",
+    "src/url/url_canon_ip.h",
+    "src/url/url_canon_mailtourl.cc",
+    "src/url/url_canon_path.cc",
+    "src/url/url_canon_pathurl.cc",
+    "src/url/url_canon_query.cc",
+    "src/url/url_canon_relative.cc",
+    "src/url/url_canon_stdstring.cc",
+    "src/url/url_canon_stdstring.h",
+    "src/url/url_canon_stdurl.cc",
+    "src/url/url_constants.cc",
+    "src/url/url_constants.h",
+    "src/url/url_features.cc",
+    "src/url/url_features.h",
+    "src/url/url_file.h",
+    "src/url/url_idna_ascii_only.cc",
+    "src/url/url_parse_file.cc",
+    "src/url/url_parse_internal.h",
+    "src/url/url_util.cc",
+    "src/url/url_util.h",
+    "src/url/url_util_internal.h",
+  ]
+
+  defines = [ "IS_URL_IMPL" ]
+
+  deps = [
+    ":base",
+    "//third_party/abseil-cpp:absl",
+  ]
+
+  public_configs = [ ":googleurl_config" ]
+
+  if (is_win) {
+    # Don't conflict with Windows' "url.dll".
+    output_name = "url_lib"
+  }
+
+  # Use ICU.
+  sources += [
+    #"src/url/url_canon_icu.cc",
+    #"src/url/url_canon_icu.h",
+    #"src/url/url_idna_icu.cc",
+  ]
+
+  include_dirs = [
+    "//",
+    "./",
+    "src/polyfills/",
+    "src/",
+  ]
+}
+
+source_set("url_test_support") {
+  testonly = true
+
+  sources = [
+    "gurl_abstract_tests.h",
+    "origin_abstract_tests.cc",
+    "origin_abstract_tests.h",
+    "url_canon_icu_test_helpers.h",
+  ]
+
+  public_deps = [ ":url" ]
+}
