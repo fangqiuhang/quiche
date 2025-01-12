@@ -2,21 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import("//build/config/compiler/compiler.gni")
-import("//build/config/dcheck_always_on.gni")
+#import("//build/config/compiler/compiler.gni")
+#import("//build/config/dcheck_always_on.gni")
 
 declare_args() {
   # Expose zlib's symbols, used by Node.js to provide zlib APIs for its native
   # modules.
   zlib_symbols_visible = false
-}
-
-if (build_with_chromium) {
-  import("//testing/test.gni")
-}
-
-if (current_cpu == "arm" || current_cpu == "arm64") {
-  import("//build/config/arm.gni")
 }
 
 config("zlib_config") {
@@ -30,11 +22,7 @@ config("zlib_config") {
 config("zlib_internal_config") {
   defines = [ "ZLIB_IMPLEMENTATION" ]
 
-  if (!is_debug) {
-    # Build code using -O3, see: crbug.com/1084371.
-    configs = [ "//build/config/compiler:optimize_speed" ]
-  }
-  if (is_debug || dcheck_always_on || use_fuzzing_engine) {
+  if (is_debug) {
     # Enable zlib's asserts in debug and fuzzer builds.
     defines += [ "ZLIB_DEBUG" ]
   }
@@ -209,8 +197,6 @@ source_set("zlib_inflate_chunk_simd") {
 
   # Needed for MSVC, which is still supported by V8 and PDFium. zlib uses K&R C
   # style function declarations, which triggers warning C4131.
-  configs -= [ "//build/config/compiler:chromium_code" ]
-  configs += [ "//build/config/compiler:no_chromium_code" ]
   configs += [ ":zlib_warnings" ]
 
   public_configs = [ ":zlib_inflate_chunk_simd_config" ]
@@ -286,7 +272,7 @@ config("zlib_warnings") {
   }
 }
 
-component("zlib") {
+static_library("zlib") {
   if (!is_win) {
     # Don't stomp on "libzlib" on other platforms.
     output_name = "chrome_zlib"
@@ -324,13 +310,13 @@ component("zlib") {
     "zutil.h",
   ]
 
-  defines = []
+  #defines = []
   deps = []
 
   if (!use_x86_x64_optimizations && !use_arm_neon_optimizations) {
     # Apparently android_cronet bot builds with NEON disabled and
     # we also should disable optimizations for iOS@x86 (a.k.a. simulator).
-    defines += [ "CPU_NO_SIMD" ]
+    #defines += [ "CPU_NO_SIMD" ]
   }
 
   if (use_x86_x64_optimizations || use_arm_neon_optimizations) {
@@ -350,20 +336,7 @@ component("zlib") {
   }
 
   if (is_android) {
-    import("//build/config/android/config.gni")
-    if (defined(android_ndk_root) && android_ndk_root != "") {
-      deps += [ "//third_party/cpu_features:ndk_compat" ]
-    } else {
-      assert(false, "CPU detection requires the Android NDK")
-    }
-  }
-
-  configs -= [ "//build/config/compiler:chromium_code" ]
-  configs += [ "//build/config/compiler:no_chromium_code" ]
-
-  if (zlib_symbols_visible) {
-    configs -= [ "//build/config/gcc:symbol_visibility_hidden" ]
-    configs += [ "//build/config/gcc:symbol_visibility_default" ]
+    #import("//build/config/android/config.gni")
   }
 
   public_configs = [ ":zlib_config" ]
@@ -375,7 +348,7 @@ component("zlib") {
     ":zlib_warnings",
   ]
 
-  allow_circular_includes_from = deps
+  #allow_circular_includes_from = deps
 }
 
 config("minizip_warnings") {
@@ -413,16 +386,13 @@ static_library("minizip") {
     ]
   }
 
-  if (is_apple || is_android || is_nacl) {
+  if (is_apple || is_android) {
     # Mac, Android and the BSDs don't have fopen64, ftello64, or fseeko64. We
     # use fopen, ftell, and fseek instead on these systems.
     defines = [ "USE_FILE32API" ]
   }
 
   deps = [ ":zlib" ]
-
-  configs -= [ "//build/config/compiler:chromium_code" ]
-  configs += [ "//build/config/compiler:no_chromium_code" ]
 
   public_configs = [ ":zlib_config" ]
 
@@ -436,45 +406,24 @@ executable("zlib_bench") {
   include_dirs = [ "." ]
 
   sources = [ "contrib/bench/zlib_bench.cc" ]
-  if (!is_debug) {
-    configs -= [ "//build/config/compiler:default_optimization" ]
-    configs += [ "//build/config/compiler:optimize_speed" ]
-  }
 
   deps = [ ":zlib" ]
-
-  configs -= [ "//build/config/compiler:chromium_code" ]
-  configs += [ "//build/config/compiler:no_chromium_code" ]
 }
 
 executable("minigzip") {
   include_dirs = [ "." ]
 
   sources = [ "test/minigzip.c" ]
-  if (!is_debug) {
-    configs -= [ "//build/config/compiler:default_optimization" ]
-    configs += [ "//build/config/compiler:optimize_speed" ]
-  }
 
   deps = [ ":zlib" ]
-
-  configs -= [ "//build/config/compiler:chromium_code" ]
-  configs += [ "//build/config/compiler:no_chromium_code" ]
 }
 
 executable("zpipe") {
   include_dirs = [ "." ]
 
   sources = [ "examples/zpipe.c" ]
-  if (!is_debug) {
-    configs -= [ "//build/config/compiler:default_optimization" ]
-    configs += [ "//build/config/compiler:optimize_speed" ]
-  }
 
   deps = [ ":zlib" ]
-
-  configs -= [ "//build/config/compiler:chromium_code" ]
-  configs += [ "//build/config/compiler:no_chromium_code" ]
 }
 
 if (!is_win || target_os != "winuwp") {
@@ -487,15 +436,7 @@ if (!is_win || target_os != "winuwp") {
       cflags = [ "-Wno-incompatible-pointer-types-discards-qualifiers" ]
     }
 
-    if (!is_debug) {
-      configs -= [ "//build/config/compiler:default_optimization" ]
-      configs += [ "//build/config/compiler:optimize_speed" ]
-    }
-
     deps = [ ":minizip" ]
-
-    configs -= [ "//build/config/compiler:chromium_code" ]
-    configs += [ "//build/config/compiler:no_chromium_code" ]
   }
 
   executable("miniunz_bin") {
@@ -507,54 +448,6 @@ if (!is_win || target_os != "winuwp") {
       cflags = [ "-Wno-incompatible-pointer-types-discards-qualifiers" ]
     }
 
-    if (!is_debug) {
-      configs -= [ "//build/config/compiler:default_optimization" ]
-      configs += [ "//build/config/compiler:optimize_speed" ]
-    }
-
     deps = [ ":minizip" ]
-
-    configs -= [ "//build/config/compiler:chromium_code" ]
-    configs += [ "//build/config/compiler:no_chromium_code" ]
-  }
-}
-
-if (build_with_chromium) {
-  test("zlib_unittests") {
-    testonly = true
-
-    sources = [
-      "contrib/tests/infcover.cc",
-      "contrib/tests/infcover.h",
-      "contrib/tests/run_all_unittests.cc",
-      "contrib/tests/utils_unittest.cc",
-      "google/compression_utils_unittest.cc",
-      "google/zip_reader_unittest.cc",
-      "google/zip_unittest.cc",
-    ]
-
-    data = [ "google/test/data/" ]
-
-    if (is_ios) {
-      bundle_deps = [ "google:zlib_pak_bundle_data" ]
-    }
-
-    deps = [
-      ":minizip",
-      ":zlib",
-      "google:compression_utils",
-      "google:zip",
-      "//base/test:test_support",
-      "//testing/gtest",
-    ]
-
-    configs -= [ "//build/config/compiler:chromium_code" ]
-    configs += [ "//build/config/compiler:no_chromium_code" ]
-
-    include_dirs = [
-      "//third_party/googletest/src/googletest/include/gtest",
-      ".",
-      "google",
-    ]
   }
 }
