@@ -162,8 +162,13 @@ protobuf_port_headers = [
 
 protobuf_upb_sources = [
   "src/upb_generator/common.cc",
-  "src/upb_generator/mangle.cc",
-  "src/upb_generator/mangle.h",
+  "src/upb_generator/common/names.cc",
+  "src/upb_generator/file_layout.cc",
+  "src/upb_generator/file_layout.h",
+  "src/upb_generator/minitable/names.cc",
+  "src/upb_generator/minitable/names.h",
+  "src/upb_generator/minitable/names_internal.cc",
+  "src/upb_generator/minitable/names_internal.h",
 ]
 
 protobuf_upb_headers = [ "src/upb_generator/common.h" ]
@@ -345,11 +350,19 @@ protobuf_compiler_java_headers = [
   "src/src/google/protobuf/compiler/java/message_serialization.h",
 ]
 
-protobuf_compiler_kotlin_sources =
-    [ "src/src/google/protobuf/compiler/kotlin/generator.cc" ]
+protobuf_compiler_kotlin_sources = [
+  "src/src/google/protobuf/compiler/kotlin/field.cc",
+  "src/src/google/protobuf/compiler/kotlin/file.cc",
+  "src/src/google/protobuf/compiler/kotlin/generator.cc",
+  "src/src/google/protobuf/compiler/kotlin/message.cc",
+]
 
-protobuf_compiler_kotlin_headers =
-    [ "src/src/google/protobuf/compiler/kotlin/generator.h" ]
+protobuf_compiler_kotlin_headers = [
+  "src/src/google/protobuf/compiler/kotlin/generator.h",
+  "src/src/google/protobuf/compiler/kotlin/file.h",
+  "src/src/google/protobuf/compiler/kotlin/field.h",
+  "src/src/google/protobuf/compiler/kotlin/message.h",
+]
 
 protobuf_compiler_objectivec_sources = [
   "src/src/google/protobuf/compiler/objectivec/enum.cc",
@@ -466,6 +479,7 @@ protobuf_compiler_rust_headers = [
 
 protobuf_compiler_sources = [
   "src/src/google/protobuf/compiler/code_generator.cc",
+  "src/src/google/protobuf/compiler/code_generator_lite.cc",
   "src/src/google/protobuf/compiler/plugin.cc",
   "src/src/google/protobuf/compiler/plugin.pb.cc",
   "src/src/google/protobuf/compiler/retention.cc",
@@ -473,6 +487,7 @@ protobuf_compiler_sources = [
 
 protobuf_compiler_headers = [
   "src/src/google/protobuf/compiler/code_generator.h",
+  "src/src/google/protobuf/compiler/code_generator_lite.h",
   "src/src/google/protobuf/compiler/plugin.h",
   "src/src/google/protobuf/compiler/plugin.pb.h",
   "src/src/google/protobuf/compiler/scc.h",
@@ -481,6 +496,7 @@ protobuf_compiler_headers = [
 
 protoc_sources = [
   "src/src/google/protobuf/compiler/code_generator.cc",
+  "src/src/google/protobuf/compiler/code_generator_lite.cc",
   "src/src/google/protobuf/compiler/command_line_interface.cc",
   "src/src/google/protobuf/compiler/cpp/enum.cc",
   "src/src/google/protobuf/compiler/cpp/enum.h",
