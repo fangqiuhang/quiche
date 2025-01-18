@@ -1,0 +1,134 @@
+# Copyright 2025 (c) fangqiuhang
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+_base_dir = "src/base"
+
+base_headers = [
+  "$_base_dir/bits.h",
+  "$_base_dir/compiler_specific.h",
+  "$_base_dir/containers/checked_iterators.h",
+  "$_base_dir/containers/contains.h",
+  "$_base_dir/containers/contiguous_iterator.h",
+  "$_base_dir/containers/span.h",
+  "$_base_dir/containers/util.h",
+  "$_base_dir/cxx20_is_constant_evaluated.h",
+  "$_base_dir/cxx20_to_address.h",
+  "$_base_dir/debug/crash_logging.h",
+  "$_base_dir/debug/leak_annotations.h",
+  "$_base_dir/functional/identity.h",
+  "$_base_dir/functional/invoke.h",
+  "$_base_dir/functional/not_fn.h",
+  "$_base_dir/memory/raw_ptr_exclusion.h",
+  "$_base_dir/no_destructor.h",
+  "$_base_dir/numerics/checked_math.h",
+  "$_base_dir/numerics/checked_math_impl.h",
+  "$_base_dir/numerics/clamped_math.h",
+  "$_base_dir/numerics/clamped_math_impl.h",
+  "$_base_dir/numerics/safe_conversions.h",
+  "$_base_dir/numerics/safe_conversions_arm_impl.h",
+  "$_base_dir/numerics/safe_conversions_impl.h",
+  "$_base_dir/numerics/safe_math.h",
+  "$_base_dir/numerics/safe_math_arm_impl.h",
+  "$_base_dir/numerics/safe_math_clang_gcc_impl.h",
+  "$_base_dir/numerics/safe_math_shared_impl.h",
+  "$_base_dir/ranges/algorithm.h",
+  "$_base_dir/ranges/functional.h",
+  "$_base_dir/ranges/ranges.h",
+  "$_base_dir/stl_util.h",
+  "$_base_dir/template_util.h",
+  "$_base_dir/types/always_false.h",
+  "$_base_dir/strings/string_piece_forward.h",
+  "$_base_dir/strings/string_piece.h",
+  "$_base_dir/strings/string_util.h",
+  "$_base_dir/strings/string_util_impl_helpers.h",
+  "$_base_dir/strings/string_util_internal.h",
+  "$_base_dir/strings/string_number_conversions.h",
+  "$_base_dir/strings/utf_string_conversions.h",
+  "$_base_dir/strings/utf_ostream_operators.h",
+  "$_base_dir/strings/utf_string_conversion_utils.h",
+  "$_base_dir/win/win_handle_types.h",
+  "$_base_dir/third_party/icu/icu_utf.h",
+]
+
+base_sources = [
+  "$_base_dir/debug/crash_logging.cc",
+  "$_base_dir/strings/string_util.cc",
+  "$_base_dir/strings/string_util_constants.cc",
+  "$_base_dir/strings/utf_ostream_operators.cc",
+  "$_base_dir/strings/utf_string_conversion_utils.cc",
+  "$_base_dir/strings/utf_string_conversions.cc",
+]
+
+if (is_win) {
+  base_headers += [ "$_base_dir/strings/string_util_win.h" ]
+  base_sources += [ "$_base_dir/strings/string_util_win.cc" ]
+} else {
+  base_headers += [ "$_base_dir/strings/string_util_posix.h" ]
+}
+
+_polyfills_dir = "src/polyfills"
+
+polyfills_headers = [
+  "$_polyfills_dir/base/allocator/buildflags.h",
+  "$_polyfills_dir/base/base_export.h",
+  "$_polyfills_dir/base/check.h",
+  "$_polyfills_dir/base/check_op.h",
+  "$_polyfills_dir/base/component_export.h",
+  "$_polyfills_dir/base/cpu_reduction_experiment.h",
+  "$_polyfills_dir/base/dcheck_is_on.h",
+  "$_polyfills_dir/base/debug/alias.h",
+  "$_polyfills_dir/base/export_template.h",
+  "$_polyfills_dir/base/feature_list.h",
+  "$_polyfills_dir/base/logging.h",
+  "$_polyfills_dir/base/memory/raw_ptr.h",
+  "$_polyfills_dir/base/memory/raw_ptr_exclusion.h",
+  "$_polyfills_dir/base/metrics/histogram_functions.h",
+  "$_polyfills_dir/base/metrics/histogram_macros.h",
+  "$_polyfills_dir/base/notreached.h",
+  "$_polyfills_dir/base/trace_event/memory_usage_estimator.h",
+  "$_polyfills_dir/third_party/perfetto/include/perfetto/tracing/traced_value.h",
+]
+
+_url_dir = "src/url"
+
+url_headers = [
+  "$_url_dir/gurl.h",
+  "$_url_dir/third_party/mozilla/url_parse.h",
+  "$_url_dir/url_canon.h",
+  "$_url_dir/url_canon_icu.h",
+  "$_url_dir/url_canon_ip.h",
+  "$_url_dir/url_canon_stdstring.h",
+  "$_url_dir/url_constants.h",
+  "$_url_dir/url_features.h",
+  "$_url_dir/url_file.h",
+  "$_url_dir/url_util.h",
+]
+
+url_sources = [
+  "$_url_dir/gurl.cc",
+  "$_url_dir/third_party/mozilla/url_parse.cc",
+  "$_url_dir/url_canon.cc",
+  "$_url_dir/url_canon_etc.cc",
+  "$_url_dir/url_canon_filesystemurl.cc",
+  "$_url_dir/url_canon_fileurl.cc",
+  "$_url_dir/url_canon_host.cc",
+  "$_url_dir/url_canon_internal.cc",
+  "$_url_dir/url_canon_internal.h",
+  "$_url_dir/url_canon_internal_file.h",
+  "$_url_dir/url_canon_ip.cc",
+  "$_url_dir/url_canon_mailtourl.cc",
+  "$_url_dir/url_canon_path.cc",
+  "$_url_dir/url_canon_pathurl.cc",
+  "$_url_dir/url_canon_query.cc",
+  "$_url_dir/url_canon_relative.cc",
+  "$_url_dir/url_canon_stdstring.cc",
+  "$_url_dir/url_canon_stdurl.cc",
+  "$_url_dir/url_constants.cc",
+  "$_url_dir/url_features.cc",
+  "$_url_dir/url_idna_ascii_only.cc",
+  "$_url_dir/url_parse_file.cc",
+  "$_url_dir/url_parse_internal.h",
+  "$_url_dir/url_util.cc",
+  "$_url_dir/url_util_internal.h",
+]

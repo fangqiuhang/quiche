@@ -1,0 +1,79 @@
+# Copyright 2013 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+import("googleurl_sources.gni")
+
+if (is_android) {
+  #import("//build/config/android/rules.gni")
+}
+
+config("googleurl_config") {
+  include_dirs = [ "src" ]
+  cflags_cc += [ "-Wno-return-type" ]
+}
+
+source_set("buildflag_header_h") {
+  sources = [ "src/build/buildflag.h" ]
+}
+
+source_set("build_config") {
+  sources = [ "src/build/build_config.h" ]
+
+  include_dirs = [ "src/build" ]
+}
+
+source_set("base") {
+  sources = base_headers + base_sources
+
+  public_configs = [ ":googleurl_config" ]
+
+  deps = [
+    ":build_config",
+    ":buildflag_header_h",
+    "//third_party/abseil-cpp:absl",
+  ]
+}
+
+source_set("url") {
+  sources = url_headers + url_sources
+
+  defines = [ "IS_URL_IMPL" ]
+
+  deps = [
+    ":base",
+    "//third_party/abseil-cpp:absl",
+  ]
+
+  public_configs = [ ":googleurl_config" ]
+
+  if (is_win) {
+    # Don't conflict with Windows' "url.dll".
+    output_name = "url_lib"
+  }
+
+  # Use ICU.
+  sources += [
+    #"src/url/url_canon_icu.cc",
+    #"src/url/url_canon_icu.h",
+    #"src/url/url_idna_icu.cc",
+  ]
+
+  include_dirs = [
+    "src/polyfills/",
+    "src/",
+  ]
+}
+
+source_set("url_test_support") {
+  testonly = true
+
+  sources = [
+    "gurl_abstract_tests.h",
+    "origin_abstract_tests.cc",
+    "origin_abstract_tests.h",
+    "url_canon_icu_test_helpers.h",
+  ]
+
+  public_deps = [ ":url" ]
+}
