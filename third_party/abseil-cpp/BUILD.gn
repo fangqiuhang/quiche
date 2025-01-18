@@ -6,21 +6,13 @@
 # opts will be linked together, and in some cases headers compiled with and
 # without these options will be part of the same program.
 
-import("//build/config/c++/c++.gni")
-import("//build/config/nacl/config.gni")
-import("//build/config/sanitizers/sanitizers.gni")
-import("//build/toolchain/toolchain.gni")
-import("//build_overrides/build.gni")
 import("//third_party/abseil-cpp/absl.gni")
 
 config("absl_component_build") {
   defines = [ "ABSL_CONSUME_DLL" ]
 }
 
-assert(!is_nacl || is_nacl_saigo,
-       "base must not be built in most nacl toolchains")
-
-component("absl") {
+static_library("absl") {
   public_deps = [ ":absl_component_deps" ]
   if (is_component_build) {
     public_configs = [ ":absl_component_build" ]
@@ -55,71 +47,4449 @@ component("absl") {
   }
 }
 
+# ==============================================================================
+# src/absl/algorithm/
+# ==============================================================================
+absl_source_set("algorithm") {
+  public = [ "src/absl/algorithm/algorithm.h" ]
+  deps = [ ":base_config" ]
+}
+
+absl_source_set("algorithm_container") {
+  public = [ "src/absl/algorithm/container.h" ]
+  deps = [
+    ":algorithm",
+    ":base_config",
+    ":base_core_headers",
+    ":base_nullability",
+    ":meta_type_traits",
+  ]
+}
+
+absl_test("algorithm_test") {
+  sources = [ "src/absl/algorithm/algorithm_test.cc" ]
+  deps = [
+    ":algorithm",
+    ":base_config",
+  ]
+}
+
+absl_test("algorithm_container_test") {
+  sources = [ "src/absl/algorithm/container_test.cc" ]
+  deps = [
+    ":algorithm_container",
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":memory",
+    ":types_span",
+  ]
+}
+
+# ==============================================================================
+# src/absl/base/
+# ==============================================================================
+absl_source_set("base_atomic_hook") {
+  public = [ "src/absl/base/internal/atomic_hook.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("base_errno_saver") {
+  public = [ "src/absl/base/internal/errno_saver.h" ]
+  deps = [ ":base_config" ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("base_log_severity") {
+  sources = [ "src/absl/base/log_severity.cc" ]
+  public = [ "src/absl/base/log_severity.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+  ]
+}
+
+absl_source_set("base_no_destructor") {
+  public = [ "src/absl/base/no_destructor.h" ]
+  deps = [
+    ":base_config",
+    ":base_nullability",
+  ]
+}
+
+absl_source_set("base_nullability") {
+  sources = [ "src/absl/base/internal/nullability_impl.h" ]
+  public = [ "src/absl/base/nullability.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":meta_type_traits",
+  ]
+}
+
+absl_source_set("base_raw_logging_internal") {
+  sources = [ "src/absl/base/internal/raw_logging.cc" ]
+  public = [ "src/absl/base/internal/raw_logging.h" ]
+  deps = [
+    ":base_atomic_hook",
+    ":base_config",
+    ":base_core_headers",
+    ":base_errno_saver",
+    ":base_log_severity",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("base_spinlock_wait") {
+  sources = [
+    "src/absl/base/internal/spinlock_akaros.inc",
+    "src/absl/base/internal/spinlock_linux.inc",
+    "src/absl/base/internal/spinlock_posix.inc",
+    "src/absl/base/internal/spinlock_wait.cc",
+    "src/absl/base/internal/spinlock_win32.inc",
+  ]
+  public = [ "internal/spinlock_wait.h" ]
+  deps = [
+    ":base_core_headers",
+    ":base_errno_saver",
+    ":base_internal",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("base_config") {
+  public = [
+    "src/absl/base/config.h",
+    "src/absl/base/options.h",
+    "src/absl/base/policy_checks.h",
+  ]
+}
+
+absl_source_set("base_cycleclock_internal") {
+  public = [
+    "src/absl/base/internal/cycleclock_config.h",
+    "src/absl/base/internal/unscaledcycleclock_config.h",
+  ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base_config",
+    ":base_internal",
+  ]
+}
+
+absl_source_set("base_dynamic_annotations") {
+  public = [ "dynamic_annotations.h" ]
+
+  # Abseil's dynamic annotations are only visible inside Abseil because
+  # their usage is deprecated in Chromium (see README.chromium for more info).
+  visibility = [ ":*" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+  ]
+}
+
+absl_source_set("base_core_headers") {
+  public = [
+    "src/absl/base/attributes.h",
+    "src/absl/base/const_init.h",
+    "src/absl/base/macros.h",
+    "src/absl/base/optimization.h",
+    "src/absl/base/port.h",
+    "src/absl/base/thread_annotations.h",
+  ]
+  deps = [ ":base_config" ]
+}
+
+absl_source_set("base_malloc_internal") {
+  sources = [ "src/absl/base/internal/low_level_alloc.cc" ]
+  public = [
+    "src/absl/base/internal/direct_mmap.h",
+    "src/absl/base/internal/low_level_alloc.h",
+  ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_dynamic_annotations",
+    ":base_internal",
+    ":base_raw_logging_internal",
+  ]
+}
+
+absl_source_set("base_internal") {
+  public = [
+    "src/absl/base/internal/hide_ptr.h",
+    "src/absl/base/internal/identity.h",
+    "src/absl/base/internal/inline_variable.h",
+    "src/absl/base/internal/invoke.h",
+    "src/absl/base/internal/scheduling_mode.h",
+  ]
+  deps = [
+    ":base_config",
+    ":meta_type_traits",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("base") {
+  sources = [
+    "src/absl/base/internal/cycleclock.cc",
+    "src/absl/base/internal/spinlock.cc",
+    "src/absl/base/internal/sysinfo.cc",
+    "src/absl/base/internal/thread_identity.cc",
+    "src/absl/base/internal/unscaledcycleclock.cc",
+  ]
+  public = [
+    "src/absl/base/call_once.h",
+    "src/absl/base/casts.h",
+    "src/absl/base/internal/cycleclock.h",
+    "src/absl/base/internal/low_level_scheduling.h",
+    "src/absl/base/internal/per_thread_tls.h",
+    "src/absl/base/internal/spinlock.h",
+    "src/absl/base/internal/sysinfo.h",
+    "src/absl/base/internal/thread_identity.h",
+    "src/absl/base/internal/tsan_mutex_interface.h",
+    "src/absl/base/internal/unscaledcycleclock.h",
+  ]
+
+  # TODO(mbonadei): The bazel file has:
+  #   "-DEFAULTLIB:advapi32.lib"
+  # understand if this is needed here as well.
+  deps = [
+    ":base_atomic_hook",
+    ":base_config",
+    ":base_core_headers",
+    ":base_cycleclock_internal",
+    ":base_dynamic_annotations",
+    ":base_internal",
+    ":base_log_severity",
+    ":base_nullability",
+    ":base_raw_logging_internal",
+    ":base_spinlock_wait",
+    ":meta_type_traits",
+  ]
+}
+
+absl_source_set("base_throw_delegate") {
+  sources = [ "src/absl/base/internal/throw_delegate.cc" ]
+  public = [ "src/absl/base/internal/throw_delegate.h" ]
+  deps = [
+    ":base_config",
+    ":base_raw_logging_internal",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("base_exception_testing") {
+  testonly = true
+  public = [ "src/absl/base/internal/exception_testing.h" ]
+  deps = [ ":base_config" ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("base_pretty_function") {
+  public = [ "src/absl/base/internal/pretty_function.h" ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("base_spinlock_test_common") {
+  testonly = true
+  sources = [ "src/absl/base/spinlock_test_common.cc" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_internal",
+    ":synchronization",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_source_set("base_endian") {
+  public = [
+    "src/absl/base/internal/endian.h",
+    "src/absl/base/internal/unaligned_access.h",
+  ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_nullability",
+  ]
+}
+
+absl_source_set("base_scoped_set_env") {
+  testonly = true
+  public = [ "src/absl/base/internal/scoped_set_env.h" ]
+  sources = [ "src/absl/base/internal/scoped_set_env.cc" ]
+  deps = [
+    ":base_config",
+    ":base_raw_logging_internal",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("base_strerror") {
+  sources = [ "src/absl/base/internal/strerror.cc" ]
+  public = [ "src/absl/base/internal/strerror.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_errno_saver",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("base_fast_type_id") {
+  public = [ "src/absl/base/internal/fast_type_id.h" ]
+  deps = [ ":base_config" ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("base_prefetch") {
+  public = [ "src/absl/base/prefetch.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+  ]
+}
+
+absl_test("base_prefetch_test") {
+  sources = [ "src/absl/base/prefetch_test.cc" ]
+  deps = [ ":base_prefetch" ]
+}
+
+absl_source_set("base_poison") {
+  public = [ "src/absl/base/internal/poison.h" ]
+  sources = [ "src/absl/base/internal/poison.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_malloc_internal",
+  ]
+}
+
+absl_test("base_poison_test") {
+  sources = [ "src/absl/base/internal/poison_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_poison",
+  ]
+}
+
+absl_source_set("base_tracing_internal") {
+  public = [ "src/absl/base/internal/tracing.h" ]
+  sources = [ "src/absl/base/internal/tracing.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+  ]
+}
+
+absl_test("base_tracing_internal_weak_test") {
+  sources = [ "src/absl/base/internal/tracing_weak_test.cc" ]
+  deps = [ ":base_tracing_internal" ]
+}
+
+absl_test("base_tracing_internal_strong_test") {
+  sources = [ "src/absl/base/internal/tracing_strong_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_tracing_internal",
+  ]
+}
+
+absl_test("base_config_test") {
+  sources = [ "src/absl/base/config_test.cc" ]
+  deps = [
+    ":base_config",
+    ":synchronization_thread_pool",
+  ]
+}
+
+absl_test("base_no_destructor_test") {
+  sources = [ "src/absl/base/no_destructor_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_no_destructor",
+    ":base_raw_logging_internal",
+  ]
+}
+
+absl_test("base_nullability_test") {
+  sources = [ "src/absl/base/nullability_test.cc" ]
+  deps = [
+    ":base_core_headers",
+    ":base_nullability",
+  ]
+}
+
+absl_test("base_nullability_default_nonnull_test") {
+  sources = [ "nullability_default_nonnull_test.cc" ]
+  deps = [ ":base_nullability" ]
+}
+
+# ==============================================================================
+# src/absl/cleanup/
+# ==============================================================================
+absl_source_set("cleanup_internal") {
+  public = [ "src/absl/cleanup/internal/cleanup.h" ]
+  deps = [
+    ":base_core_headers",
+    ":base_internal",
+    ":utility",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("cleanup") {
+  public = [ "src/absl/cleanup/cleanup.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":cleanup_internal",
+  ]
+}
+
+absl_test("cleanup_test") {
+  sources = [ "src/absl/cleanup/cleanup_test.cc" ]
+  deps = [
+    ":base_config",
+    ":cleanup",
+    ":utility",
+  ]
+}
+
+# ==============================================================================
+# src/absl/container/
+# ==============================================================================
+absl_source_set("container_compressed_tuple") {
+  public = [ "src/absl/container/internal/compressed_tuple.h" ]
+  deps = [ ":utility" ]
+}
+
+absl_source_set("container_fixed_array") {
+  public = [ "src/absl/container/fixed_array.h" ]
+  deps = [
+    ":algorithm",
+    ":base_config",
+    ":base_core_headers",
+    ":base_dynamic_annotations",
+    ":base_throw_delegate",
+    ":container_compressed_tuple",
+    ":memory",
+  ]
+}
+
+absl_test("container_fixed_array_test") {
+  sources = [ "src/absl/container/fixed_array_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_exception_testing",
+    ":container_fixed_array",
+    ":container_test_allocator",
+    ":container_test_instance_tracker",
+    ":hash_testing",
+    ":memory",
+  ]
+}
+
+absl_source_set("container_inlined_vector_internal") {
+  public = [ "src/absl/container/internal/inlined_vector.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_internal",
+    ":container_compressed_tuple",
+    ":memory",
+    ":meta_type_traits",
+    ":types_span",
+  ]
+}
+
+absl_source_set("container_inlined_vector") {
+  public = [ "src/absl/container/inlined_vector.h" ]
+  deps = [
+    ":algorithm",
+    ":base_core_headers",
+    ":base_throw_delegate",
+    ":container_inlined_vector_internal",
+    ":memory",
+    ":meta_type_traits",
+  ]
+}
+
+absl_source_set("container_test_allocator") {
+  testonly = true
+  public = [ "src/absl/container/internal/test_allocator.h" ]
+  deps = [
+    ":base_config",
+    "//third_party/googletest:gtest",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_test("container_inlined_vector_test") {
+  sources = [ "src/absl/container/inlined_vector_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_exception_testing",
+    ":container_inlined_vector",
+    ":container_test_allocator",
+    ":container_test_instance_tracker",
+    ":hash_testing",
+    ":log_check",
+    ":memory",
+    ":strings",
+  ]
+}
+
+absl_source_set("container_test_instance_tracker") {
+  testonly = true
+  sources = [ "src/absl/container/internal/test_instance_tracker.cc" ]
+  public = [ "src/absl/container/internal/test_instance_tracker.h" ]
+  deps = [ ":types_compare" ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("container_flat_hash_map") {
+  public = [ "src/absl/container/flat_hash_map.h" ]
+  deps = [
+    ":algorithm_container",
+    ":base_core_headers",
+    ":container_hash_container_defaults",
+    ":container_memory",
+    ":container_raw_hash_map",
+    ":meta_type_traits",
+  ]
+}
+
+absl_test("container_flat_hash_map_test") {
+  sources = [ "src/absl/container/flat_hash_map_test.cc" ]
+  deps = [
+    ":base_config",
+    ":container_flat_hash_map",
+    ":container_hash_generator_testing",
+    ":container_hash_policy_testing",
+    ":container_test_allocator",
+    ":container_unordered_map_constructor_test",
+    ":container_unordered_map_lookup_test",
+    ":container_unordered_map_members_test",
+    ":container_unordered_map_modifiers_test",
+    ":log_check",
+    ":meta_type_traits",
+    ":types_any",
+  ]
+}
+
+absl_source_set("container_flat_hash_set") {
+  public = [ "src/absl/container/flat_hash_set.h" ]
+  deps = [
+    ":algorithm_container",
+    ":base_core_headers",
+    ":container_hash_container_defaults",
+    ":container_memory",
+    ":container_raw_hash_set",
+    ":memory",
+    ":meta_type_traits",
+  ]
+}
+
+absl_test("container_flat_hash_set_test") {
+  sources = [ "src/absl/container/flat_hash_set_test.cc" ]
+  deps = [
+    ":base_config",
+    ":container_flat_hash_set",
+    ":container_hash_container_defaults",
+    ":container_hash_generator_testing",
+    ":container_memory",
+    ":container_test_allocator",
+    ":container_unordered_set_constructor_test",
+    ":container_unordered_set_lookup_test",
+    ":container_unordered_set_members_test",
+    ":container_unordered_set_modifiers_test",
+    ":hash",
+    ":log_check",
+    ":memory",
+    ":strings",
+  ]
+}
+
+absl_source_set("container_node_hash_map") {
+  public = [ "src/absl/container/node_hash_map.h" ]
+  deps = [
+    ":algorithm_container",
+    ":base_core_headers",
+    ":container_hash_container_defaults",
+    ":container_memory",
+    ":container_node_slot_policy",
+    ":container_raw_hash_map",
+    ":memory",
+    ":meta_type_traits",
+  ]
+}
+
+absl_test("container_node_hash_map_test") {
+  sources = [ "src/absl/container/node_hash_map_test.cc" ]
+  deps = [
+    ":base_config",
+    ":container_hash_policy_testing",
+    ":container_node_hash_map",
+    ":container_tracked",
+    ":container_unordered_map_constructor_test",
+    ":container_unordered_map_lookup_test",
+    ":container_unordered_map_members_test",
+    ":container_unordered_map_modifiers_test",
+  ]
+}
+
+absl_source_set("container_node_hash_set") {
+  public = [ "src/absl/container/node_hash_set.h" ]
+  deps = [
+    ":algorithm_container",
+    ":base_core_headers",
+    ":container_hash_container_defaults",
+    ":container_memory",
+    ":container_node_slot_policy",
+    ":container_raw_hash_set",
+    ":memory",
+    ":meta_type_traits",
+  ]
+}
+
+absl_test("container_node_hash_set_test") {
+  sources = [ "src/absl/container/node_hash_set_test.cc" ]
+  deps = [
+    ":base_config",
+    ":container_hash_generator_testing",
+    ":container_hash_policy_testing",
+    ":container_node_hash_set",
+    ":container_unordered_set_constructor_test",
+    ":container_unordered_set_lookup_test",
+    ":container_unordered_set_members_test",
+    ":container_unordered_set_modifiers_test",
+    ":memory",
+  ]
+}
+
+absl_source_set("container_memory") {
+  public = [ "src/absl/container/internal/container_memory.h" ]
+  deps = [
+    ":base_config",
+    ":memory",
+    ":meta_type_traits",
+    ":utility",
+  ]
+}
+
+absl_source_set("container_hash_function_defaults") {
+  public = [ "src/absl/container/internal/hash_function_defaults.h" ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base_config",
+    ":container_common",
+    ":hash",
+    ":meta_type_traits",
+    ":strings",
+    ":strings_cord",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("container_hash_container_defaults") {
+  public = [ "src/absl/container/hash_container_defaults.h" ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base_config",
+    ":container_hash_function_defaults",
+  ]
+}
+
+absl_test("container_hash_function_defaults_test") {
+  sources = [ "src/absl/container/internal/hash_function_defaults_test.cc" ]
+  deps = [
+    ":container_flat_hash_map",
+    ":container_flat_hash_set",
+    ":container_hash_function_defaults",
+    ":hash",
+    ":random",
+    ":strings",
+    ":strings_cord",
+    ":strings_cord_test_helpers",
+  ]
+}
+
+absl_source_set("container_hash_generator_testing") {
+  testonly = true
+  sources = [ "src/absl/container/internal/hash_generator_testing.cc" ]
+  public = [ "src/absl/container/internal/hash_generator_testing.h" ]
+  deps = [
+    ":base_no_destructor",
+    ":container_hash_policy_testing",
+    ":memory",
+    ":meta_type_traits",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("container_hash_policy_testing") {
+  testonly = true
+  public = [ "src/absl/container/internal/hash_policy_testing.h" ]
+  deps = [
+    ":hash",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("container_hash_policy_traits") {
+  public = [ "src/absl/container/internal/hash_policy_traits.h" ]
+  deps = [
+    ":container_common_policy_traits",
+    ":meta_type_traits",
+  ]
+}
+
+absl_source_set("container_common_policy_traits") {
+  public = [ "src/absl/container/internal/common_policy_traits.h" ]
+  visibility = [ ":*" ]
+  deps = [ ":meta_type_traits" ]
+}
+
+absl_test("container_common_policy_traits_test") {
+  sources = [ "src/absl/container/internal/common_policy_traits_test.cc" ]
+  deps = [
+    ":base_config",
+    ":container_common_policy_traits",
+  ]
+}
+
+absl_source_set("container_hashtable_debug") {
+  public = [ "src/absl/container/internal/hashtable_debug.h" ]
+  deps = [ ":container_hashtable_debug_hooks" ]
+}
+
+absl_source_set("container_hashtable_debug_hooks") {
+  public = [ "src/absl/container/internal/hashtable_debug_hooks.h" ]
+  deps = [ ":base_config" ]
+}
+
+absl_source_set("container_hashtablez_sampler") {
+  public = [ "src/absl/container/internal/hashtablez_sampler.h" ]
+  sources = [
+    "src/absl/container/internal/hashtablez_sampler.cc",
+    "src/absl/container/internal/hashtablez_sampler_force_weak_definition.cc",
+  ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_no_destructor",
+    ":base_raw_logging_internal",
+    ":debugging_stacktrace",
+    ":memory",
+    ":profiling_exponential_biased",
+    ":profiling_sample_recorder",
+    ":synchronization",
+    ":time",
+    ":utility",
+  ]
+}
+
+absl_source_set("container_node_slot_policy") {
+  public = [ "src/absl/container/internal/node_slot_policy.h" ]
+  deps = [ ":base_config" ]
+}
+
+absl_test("container_node_slot_policy_test") {
+  sources = [ "src/absl/container/internal/node_slot_policy_test.cc" ]
+  deps = [
+    ":base_config",
+    ":container_hash_policy_traits",
+    ":container_node_slot_policy",
+  ]
+}
+
+absl_source_set("container_raw_hash_map") {
+  public = [ "src/absl/container/internal/raw_hash_map.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_throw_delegate",
+    ":container_memory",
+    ":container_raw_hash_set",
+  ]
+}
+
+absl_source_set("container_common") {
+  public = [ "src/absl/container/internal/common.h" ]
+  deps = [
+    ":meta_type_traits",
+    ":types_optional",
+  ]
+}
+
+absl_source_set("container_raw_hash_set") {
+  sources = [ "src/absl/container/internal/raw_hash_set.cc" ]
+  public = [ "src/absl/container/internal/raw_hash_set.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_dynamic_annotations",
+    ":base_endian",
+    ":base_prefetch",
+    ":base_raw_logging_internal",
+    ":container_common",
+    ":container_compressed_tuple",
+    ":container_hash_function_defaults",
+    ":container_hash_policy_traits",
+    ":container_hashtable_debug_hooks",
+    ":container_hashtablez_sampler",
+    ":container_memory",
+    ":hash",
+    ":memory",
+    ":meta_type_traits",
+    ":numeric_bits",
+    ":utility",
+  ]
+}
+
+absl_test("container_raw_hash_set_test") {
+  sources = [ "src/absl/container/internal/raw_hash_set_test.cc" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_prefetch",
+    ":container_flat_hash_map",
+    ":container_flat_hash_set",
+    ":container_hash_function_defaults",
+    ":container_hash_policy_testing",
+    ":container_hashtable_debug",
+    ":container_hashtablez_sampler",
+    ":container_memory",
+    ":container_node_hash_set",
+    ":container_raw_hash_set",
+    ":container_test_allocator",
+    ":container_test_instance_tracker",
+    ":functional_function_ref",
+    ":hash",
+    ":log",
+    ":log_check",
+    ":memory",
+    ":meta_type_traits",
+    ":strings",
+    ":types_optional",
+  ]
+}
+
+absl_test("container_raw_hash_set_allocator_test") {
+  sources = [ "src/absl/container/internal/raw_hash_set_allocator_test.cc" ]
+  deps = [
+    ":base_config",
+    ":container_memory",
+    ":container_raw_hash_set",
+    ":container_tracked",
+  ]
+}
+
+absl_source_set("container_layout") {
+  public = [ "src/absl/container/internal/layout.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":debugging_demangle_internal",
+    ":meta_type_traits",
+    ":strings",
+    ":types_span",
+    ":utility",
+  ]
+}
+
+absl_test("container_layout_test") {
+  sources = [ "src/absl/container/internal/layout_test.cc" ]
+  deps = [
+    ":base_config",
+    ":container_layout",
+    ":log_check",
+    ":types_span",
+    ":utility",
+  ]
+}
+
+absl_source_set("container_tracked") {
+  testonly = true
+  public = [ "src/absl/container/internal/tracked.h" ]
+  deps = [ ":base_config" ]
+}
+
+absl_source_set("container_unordered_map_constructor_test") {
+  testonly = true
+  public = [ "src/absl/container/internal/unordered_map_constructor_test.h" ]
+  deps = [
+    ":container_hash_generator_testing",
+    ":container_hash_policy_testing",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_source_set("container_unordered_map_lookup_test") {
+  testonly = true
+  public = [ "src/absl/container/internal/unordered_map_lookup_test.h" ]
+  deps = [
+    ":container_hash_generator_testing",
+    ":container_hash_policy_testing",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_source_set("container_unordered_map_modifiers_test") {
+  testonly = true
+  public = [ "src/absl/container/internal/unordered_map_modifiers_test.h" ]
+  deps = [
+    ":container_hash_generator_testing",
+    ":container_hash_policy_testing",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_source_set("container_unordered_set_constructor_test") {
+  testonly = true
+  public = [ "src/absl/container/internal/unordered_set_constructor_test.h" ]
+  deps = [
+    ":container_hash_generator_testing",
+    ":container_hash_policy_testing",
+    ":meta_type_traits",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_source_set("container_unordered_set_members_test") {
+  testonly = true
+  public = [ "src/absl/container/internal/unordered_set_members_test.h" ]
+  deps = [
+    ":meta_type_traits",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_source_set("container_unordered_map_members_test") {
+  testonly = true
+  public = [ "src/absl/container/internal/unordered_map_members_test.h" ]
+  deps = [
+    ":meta_type_traits",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_source_set("container_unordered_set_lookup_test") {
+  testonly = true
+  public = [ "src/absl/container/internal/unordered_set_lookup_test.h" ]
+  deps = [
+    ":container_hash_generator_testing",
+    ":container_hash_policy_testing",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_source_set("container_unordered_set_modifiers_test") {
+  testonly = true
+  public = [ "src/absl/container/internal/unordered_set_modifiers_test.h" ]
+  deps = [
+    ":container_hash_generator_testing",
+    ":container_hash_policy_testing",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_test("container_sample_element_size_test") {
+  public = [ "src/absl/container/sample_element_size_test.cc" ]
+  deps = [
+    ":container_flat_hash_map",
+    ":container_flat_hash_set",
+    ":container_node_hash_map",
+    ":container_node_hash_set",
+  ]
+}
+
+absl_source_set("container_btree") {
+  sources = [
+    "src/absl/container/internal/btree.h",
+    "src/absl/container/internal/btree_container.h",
+  ]
+  public = [
+    "src/absl/container/btree_map.h",
+    "src/absl/container/btree_set.h",
+  ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_raw_logging_internal",
+    ":base_throw_delegate",
+    ":container_common",
+    ":container_common_policy_traits",
+    ":container_compressed_tuple",
+    ":container_layout",
+    ":container_memory",
+    ":memory",
+    ":meta_type_traits",
+    ":strings_cord",
+    ":strings_string_view",
+    ":types_compare",
+  ]
+}
+
+absl_source_set("container_btree_test_common") {
+  testonly = true
+  public = [ "src/absl/container/btree_test.h" ]
+  deps = [
+    ":container_btree",
+    ":container_flat_hash_set",
+    ":strings",
+    ":strings_cord",
+    ":time",
+  ]
+}
+
+# ==============================================================================
+# src/absl/debugging/
+# ==============================================================================
+absl_source_set("debugging_stacktrace") {
+  sources = [
+    "src/absl/debugging/internal/stacktrace_aarch64-inl.inc",
+    "src/absl/debugging/internal/stacktrace_arm-inl.inc",
+    "src/absl/debugging/internal/stacktrace_config.h",
+    "src/absl/debugging/internal/stacktrace_emscripten-inl.inc",
+    "src/absl/debugging/internal/stacktrace_generic-inl.inc",
+    "src/absl/debugging/internal/stacktrace_powerpc-inl.inc",
+    "src/absl/debugging/internal/stacktrace_riscv-inl.inc",
+    "src/absl/debugging/internal/stacktrace_unimplemented-inl.inc",
+    "src/absl/debugging/internal/stacktrace_win32-inl.inc",
+    "src/absl/debugging/internal/stacktrace_x86-inl.inc",
+    "src/absl/debugging/stacktrace.cc",
+  ]
+  public = [ "src/absl/debugging/stacktrace.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_dynamic_annotations",
+    ":base_raw_logging_internal",
+    ":debugging_internal",
+  ]
+}
+
+absl_test("debugging_stacktrace_test") {
+  sources = [ "src/absl/debugging/stacktrace_test.cc" ]
+  deps = [
+    ":base_core_headers",
+    ":debugging_stacktrace",
+  ]
+}
+
+absl_source_set("debugging_symbolize") {
+  sources = [
+    "src/absl/debugging/symbolize.cc",
+    "src/absl/debugging/symbolize_darwin.inc",
+    "src/absl/debugging/symbolize_elf.inc",
+    "src/absl/debugging/symbolize_emscripten.inc",
+    "src/absl/debugging/symbolize_unimplemented.inc",
+    "src/absl/debugging/symbolize_win32.inc",
+  ]
+  public = [
+    "src/absl/debugging/internal/symbolize.h",
+    "src/absl/debugging/symbolize.h",
+  ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_dynamic_annotations",
+    ":base_malloc_internal",
+    ":base_raw_logging_internal",
+    ":debugging_demangle_internal",
+    ":debugging_internal",
+    ":strings",
+    ":strings_string_view",
+  ]
+
+  # TODO(mbonadei): The bazel file has:
+  #   -DEFAULTLIB:dbghelp.lib
+  # evaluate if this needs to be added here as well.
+}
+
+absl_source_set("debugging_examine_stack") {
+  sources = [ "src/absl/debugging/internal/examine_stack.cc" ]
+  public = [ "src/absl/debugging/internal/examine_stack.h" ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_raw_logging_internal",
+    ":debugging_stacktrace",
+    ":debugging_symbolize",
+  ]
+}
+
+absl_source_set("debugging_failure_signal_handler") {
+  sources = [ "src/absl/debugging/failure_signal_handler.cc" ]
+  public = [ "src/absl/debugging/failure_signal_handler.h" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_raw_logging_internal",
+    ":debugging_examine_stack",
+    ":debugging_stacktrace",
+  ]
+}
+
+absl_source_set("debugging_internal") {
+  sources = [
+    "src/absl/debugging/internal/address_is_readable.cc",
+    "src/absl/debugging/internal/elf_mem_image.cc",
+    "src/absl/debugging/internal/vdso_support.cc",
+  ]
+  public = [
+    "src/absl/debugging/internal/address_is_readable.h",
+    "src/absl/debugging/internal/elf_mem_image.h",
+    "src/absl/debugging/internal/vdso_support.h",
+  ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_dynamic_annotations",
+    ":base_errno_saver",
+    ":base_raw_logging_internal",
+  ]
+}
+
+absl_source_set("debugging_demangle_internal") {
+  sources = [ "src/absl/debugging/internal/demangle.cc" ]
+  public = [ "src/absl/debugging/internal/demangle.h" ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_nullability",
+    ":debugging_demangle_rust",
+    ":numeric_bits",
+  ]
+}
+
+absl_source_set("debugging_bounded_utf8_length_sequence") {
+  public = [ "src/absl/debugging/internal/bounded_utf8_length_sequence.h" ]
+  deps = [
+    ":base_config",
+    ":numeric_bits",
+  ]
+}
+
+absl_test("debugging_bounded_utf8_length_sequence_test") {
+  sources =
+      [ "src/absl/debugging/internal/bounded_utf8_length_sequence_test.cc" ]
+  deps = [
+    ":base_config",
+    ":debugging_bounded_utf8_length_sequence",
+  ]
+}
+
+absl_source_set("debugging_decode_rust_punycode") {
+  sources = [ "src/absl/debugging/internal/decode_rust_punycode.cc" ]
+  public = [ "src/absl/debugging/internal/decode_rust_punycode.h" ]
+  deps = [
+    ":base_config",
+    ":base_nullability",
+    ":debugging_bounded_utf8_length_sequence",
+    ":debugging_utf8_for_code_point",
+  ]
+}
+
+absl_test("debugging_decode_rust_punycode_test") {
+  sources = [ "src/absl/debugging/internal/decode_rust_punycode_test.cc" ]
+  deps = [
+    ":base_config",
+    ":debugging_decode_rust_punycode",
+  ]
+}
+
+absl_source_set("debugging_demangle_rust") {
+  sources = [ "src/absl/debugging/internal/demangle_rust.cc" ]
+  public = [ "src/absl/debugging/internal/demangle_rust.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":debugging_decode_rust_punycode",
+  ]
+}
+
+absl_test("debugging_demangle_rust_test") {
+  sources = [ "src/absl/debugging/internal/demangle_rust_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":debugging_demangle_rust",
+  ]
+}
+
+absl_source_set("debugging_utf8_for_code_point") {
+  sources = [ "src/absl/debugging/internal/utf8_for_code_point.cc" ]
+  public = [ "src/absl/debugging/internal/utf8_for_code_point.h" ]
+  deps = [ ":base_config" ]
+}
+
+absl_test("debugging_utf8_for_code_point_test") {
+  sources = [ "src/absl/debugging/internal/utf8_for_code_point_test.cc" ]
+  deps = [
+    ":base_config",
+    ":debugging_utf8_for_code_point",
+  ]
+}
+
+absl_source_set("debugging_leak_check") {
+  sources = [ "src/absl/debugging/leak_check.cc" ]
+  public = [ "src/absl/debugging/leak_check.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+  ]
+}
+
+absl_source_set("debugging_stack_consumption") {
+  testonly = true
+  sources = [ "src/absl/debugging/internal/stack_consumption.cc" ]
+  public = [ "src/absl/debugging/internal/stack_consumption.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_raw_logging_internal",
+  ]
+  visibility = [ ":*" ]
+}
+
+# ==============================================================================
+# src/absl/functional/
+# ==============================================================================
+absl_source_set("functional_any_invocable") {
+  sources = [ "src/absl/functional/internal/any_invocable.h" ]
+  public = [ "src/absl/functional/any_invocable.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_internal",
+    ":meta_type_traits",
+    ":utility",
+  ]
+}
+
+absl_test("functional_any_invocable_test") {
+  sources = [
+    "src/absl/functional/any_invocable_test.cc",
+    "src/absl/functional/internal/any_invocable.h",
+  ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_internal",
+    ":functional_any_invocable",
+    ":meta_type_traits",
+    ":utility",
+  ]
+}
+
+absl_source_set("functional_bind_front") {
+  sources = [ "src/absl/functional/internal/front_binder.h" ]
+  public = [ "src/absl/functional/bind_front.h" ]
+  deps = [
+    ":base_internal",
+    ":container_compressed_tuple",
+    ":meta_type_traits",
+    ":utility",
+  ]
+}
+
+absl_source_set("functional_function_ref") {
+  sources = [ "src/absl/functional/internal/function_ref.h" ]
+  public = [ "src/absl/functional/function_ref.h" ]
+  deps = [
+    ":base_core_headers",
+    ":base_internal",
+    ":functional_any_invocable",
+    ":meta_type_traits",
+  ]
+}
+
+absl_test("function_ref_test") {
+  sources = [ "src/absl/functional/function_ref_test.cc" ]
+  deps = [
+    ":container_test_instance_tracker",
+    ":functional_any_invocable",
+    ":functional_function_ref",
+    ":memory",
+  ]
+}
+
+absl_source_set("functional_overload") {
+  public = [ "src/absl/functional/overload.h" ]
+  deps = [
+    ":base_config",
+    ":meta_type_traits",
+  ]
+}
+
+absl_test("functional_overload_test") {
+  sources = [ "src/absl/functional/overload_test.cc" ]
+  deps = [
+    ":base_config",
+    ":functional_overload",
+    ":strings",
+    ":strings_string_view",
+    ":types_variant",
+  ]
+}
+
+# ==============================================================================
+# src/absl/hash/
+# ==============================================================================
+absl_source_set("hash") {
+  sources = [
+    "src/absl/hash/internal/hash.cc",
+    "src/absl/hash/internal/hash.h",
+  ]
+  public = [ "src/absl/hash/hash.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_endian",
+    ":container_fixed_array",
+    ":functional_function_ref",
+    ":hash_city",
+    ":hash_low_level_hash",
+    ":meta_type_traits",
+    ":numeric_bits",
+    ":numeric_int128",
+    ":strings_string_view",
+    ":types_optional",
+    ":types_variant",
+    ":utility",
+  ]
+}
+
+absl_source_set("hash_testing") {
+  testonly = true
+  public = [ "src/absl/hash/hash_testing.h" ]
+  deps = [
+    ":hash_spy_hash_state",
+    ":meta_type_traits",
+    ":strings",
+    ":types_variant",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_test("hash_test") {
+  sources = [
+    "src/absl/hash/hash_test.cc",
+    "src/absl/hash/internal/hash_test.h",
+  ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":container_btree",
+    ":container_flat_hash_map",
+    ":container_flat_hash_set",
+    ":container_node_hash_map",
+    ":container_node_hash_set",
+    ":hash",
+    ":hash_spy_hash_state",
+    ":hash_testing",
+    ":memory",
+    ":meta_type_traits",
+    ":numeric_int128",
+    ":strings_cord_test_helpers",
+    ":strings_string_view",
+    ":types_optional",
+    ":types_variant",
+  ]
+}
+
+absl_test("hash_instantiated_test") {
+  sources = [
+    "src/absl/hash/hash_instantiated_test.cc",
+    "src/absl/hash/internal/hash_test.h",
+  ]
+  deps = [
+    ":base_config",
+    ":container_btree",
+    ":container_flat_hash_map",
+    ":container_flat_hash_set",
+    ":container_node_hash_map",
+    ":container_node_hash_set",
+    ":hash",
+    ":hash_testing",
+  ]
+}
+
+absl_source_set("hash_spy_hash_state") {
+  testonly = true
+  public = [ "src/absl/hash/internal/spy_hash_state.h" ]
+  deps = [
+    ":hash",
+    ":strings",
+    ":strings_str_format",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("hash_city") {
+  public = [ "src/absl/hash/internal/city.h" ]
+  sources = [ "src/absl/hash/internal/city.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_endian",
+  ]
+}
+
+absl_source_set("hash_low_level_hash") {
+  public = [ "src/absl/hash/internal/low_level_hash.h" ]
+  sources = [ "src/absl/hash/internal/low_level_hash.cc" ]
+  deps = [
+    ":base_config",
+    ":base_endian",
+    ":base_prefetch",
+    ":numeric_int128",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_test("hash_low_level_hash_test") {
+  sources = [ "src/absl/hash/internal/low_level_hash_test.cc" ]
+  deps = [
+    ":hash_low_level_hash",
+    ":strings",
+  ]
+}
+
+# ==============================================================================
+# src/absl/log/
+# ==============================================================================
+absl_source_set("log_absl_check") {
+  public = [ "src/absl/log/absl_check.h" ]
+  deps = [ ":log_internal_check_impl" ]
+}
+
+absl_source_set("log_absl_log") {
+  public = [ "src/absl/log/absl_log.h" ]
+  deps = [ ":log_internal_log_impl" ]
+}
+
+absl_source_set("log_check") {
+  public = [ "src/absl/log/check.h" ]
+  deps = [
+    ":log_internal_check_impl",
+    ":log_internal_check_op",
+    ":log_internal_conditions",
+    ":log_internal_log_message",
+    ":log_internal_strip",
+  ]
+}
+
+absl_source_set("log_die_if_null") {
+  sources = [ "src/absl/log/die_if_null.cc" ]
+  public = [ "src/absl/log/die_if_null.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":log",
+    ":strings",
+  ]
+}
+
+absl_source_set("log_flags") {
+  sources = [ "src/absl/log/flags.cc" ]
+  public = [ "src/absl/log/flags.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_log_severity",
+    ":flags_flag",
+    ":flags_marshalling",
+    ":log_globals",
+    ":log_internal_config",
+    ":log_internal_flags",
+    ":log_internal_vlog_config",
+    ":strings",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("log_globals") {
+  sources = [ "src/absl/log/globals.cc" ]
+  public = [ "src/absl/log/globals.h" ]
+  deps = [
+    ":base_atomic_hook",
+    ":base_config",
+    ":base_core_headers",
+    ":base_log_severity",
+    ":base_raw_logging_internal",
+    ":hash",
+    ":log_internal_vlog_config",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("log_initialize") {
+  sources = [ "src/absl/log/initialize.cc" ]
+  public = [ "src/absl/log/initialize.h" ]
+  deps = [
+    ":base_config",
+    ":log_globals",
+    ":log_internal_globals",
+    ":time",
+  ]
+}
+
+absl_source_set("log") {
+  public = [ "src/absl/log/log.h" ]
+  deps = [
+    ":log_internal_log_impl",
+    ":log_vlog_is_on",
+  ]
+}
+
+absl_source_set("log_entry") {
+  sources = [ "src/absl/log/log_entry.cc" ]
+  public = [ "src/absl/log/log_entry.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_log_severity",
+    ":log_internal_config",
+    ":strings_string_view",
+    ":time",
+    ":types_span",
+  ]
+}
+
+absl_source_set("log_sink") {
+  sources = [ "src/absl/log/log_sink.cc" ]
+  public = [ "src/absl/log/log_sink.h" ]
+  deps = [
+    ":base_config",
+    ":log_entry",
+  ]
+}
+
+absl_source_set("log_sink_registry") {
+  public = [ "src/absl/log/log_sink_registry.h" ]
+  deps = [
+    ":base_config",
+    ":base_nullability",
+    ":log_internal_log_sink_set",
+    ":log_sink",
+  ]
+}
+
+absl_source_set("log_streamer") {
+  public = [ "src/absl/log/log_streamer.h" ]
+  deps = [
+    ":base_config",
+    ":base_log_severity",
+    ":log_absl_log",
+    ":strings_internal",
+    ":strings_string_view",
+    ":types_optional",
+    ":utility",
+  ]
+}
+
+absl_source_set("log_scoped_mock_log") {
+  testonly = true
+  sources = [ "src/absl/log/scoped_mock_log.cc" ]
+  public = [ "src/absl/log/scoped_mock_log.h" ]
+  deps = [
+    ":base_config",
+    ":base_log_severity",
+    ":base_raw_logging_internal",
+    ":log_entry",
+    ":log_sink",
+    ":log_sink_registry",
+    ":strings_string_view",
+    "//third_party/googletest:gmock",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_source_set("log_structured") {
+  testonly = true
+  public = [ "src/absl/log/structured.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":log_internal_structured",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("log_absl_vlog_is_on") {
+  public = [ "src/absl/log/absl_vlog_is_on.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":log_internal_vlog_config",
+    ":strings",
+  ]
+}
+
+absl_source_set("log_vlog_is_on") {
+  public = [ "src/absl/log/vlog_is_on.h" ]
+  deps = [ ":log_absl_vlog_is_on" ]
+}
+
+absl_test("log_vlog_is_on_test") {
+  sources = [ "src/absl/log/vlog_is_on_test.cc" ]
+  deps = [
+    ":base_log_severity",
+    ":flags_flag",
+    ":log",
+    ":log_flags",
+    ":log_globals",
+    ":log_scoped_mock_log",
+    ":log_vlog_is_on",
+    ":types_optional",
+  ]
+}
+
+absl_test("log_absl_check_test") {
+  sources = [ "src/absl/log/absl_check_test.cc" ]
+  if (is_ios) {
+    sources = []
+  }
+  deps = [
+    ":log_absl_check",
+    ":log_check_test_impl",
+  ]
+}
+
+absl_test("log_absl_log_basic_test") {
+  sources = [ "src/absl/log/absl_log_basic_test.cc" ]
+  deps = [
+    ":log_absl_log",
+    ":log_basic_test_impl",
+  ]
+}
+
+absl_test("log_check_test") {
+  sources = [ "src/absl/log/check_test.cc" ]
+  if (is_ios) {
+    sources = []
+  }
+  deps = [
+    ":log_check",
+    ":log_check_test_impl",
+  ]
+}
+
+absl_source_set("log_check_test_impl") {
+  testonly = true
+  public = [ "src/absl/log/check_test_impl.inc" ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":log_internal_test_helpers",
+    ":status",
+    ":strings",
+    ":strings_string_view",
+    "//third_party/googletest:gmock",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_test("log_die_if_null_test") {
+  sources = [ "src/absl/log/die_if_null_test.cc" ]
+  deps = [
+    ":base_core_headers",
+    ":log_die_if_null",
+    ":log_internal_test_helpers",
+  ]
+}
+
+absl_test("log_flags_test") {
+  sources = [ "src/absl/log/flags_test.cc" ]
+  deps = [
+    ":base_core_headers",
+    ":base_log_severity",
+    ":flags_flag",
+    ":flags_reflection",
+    ":log",
+    ":log_flags",
+    ":log_globals",
+    ":log_internal_flags",
+    ":log_internal_test_helpers",
+    ":log_internal_test_matchers",
+    ":log_scoped_mock_log",
+    ":strings",
+  ]
+}
+
+absl_test("log_globals_test") {
+  sources = [ "src/absl/log/globals_test.cc" ]
+  deps = [
+    ":base_core_headers",
+    ":base_log_severity",
+    ":log",
+    ":log_globals",
+    ":log_internal_globals",
+    ":log_internal_test_helpers",
+    ":log_scoped_mock_log",
+  ]
+}
+
+absl_test("log_basic_test") {
+  sources = [ "src/absl/log/log_basic_test.cc" ]
+  deps = [
+    ":log",
+    ":log_basic_test_impl",
+  ]
+}
+
+absl_source_set("log_basic_test_impl") {
+  public = [ "src/absl/log/log_basic_test_impl.inc" ]
+  testonly = true
+  visibility = [ ":*" ]
+  deps = [
+    ":base",
+    ":base_log_severity",
+    ":log_entry",
+    ":log_globals",
+    ":log_internal_globals",
+    ":log_internal_test_actions",
+    ":log_internal_test_helpers",
+    ":log_internal_test_matchers",
+    ":log_scoped_mock_log",
+    "//third_party/googletest:gmock",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_test("log_entry_test") {
+  sources = [ "src/absl/log/log_entry_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_log_severity",
+    ":log_entry",
+    ":log_internal_append_truncated",
+    ":log_internal_format",
+    ":log_internal_test_helpers",
+    ":strings",
+    ":strings_string_view",
+    ":time",
+    ":types_span",
+  ]
+}
+
+absl_test("log_format_test") {
+  sources = [ "src/absl/log/log_format_test.cc" ]
+  deps = [
+    ":log",
+    ":log_check",
+    ":log_internal_test_matchers",
+    ":log_scoped_mock_log",
+    ":strings",
+    ":strings_str_format",
+    ":strings_string_view",
+    ":types_optional",
+  ]
+}
+
+absl_test("log_macro_hygiene_test") {
+  sources = [ "src/absl/log/log_macro_hygiene_test.cc" ]
+  deps = [
+    ":base_core_headers",
+    ":base_log_severity",
+    ":log",
+    ":log_scoped_mock_log",
+  ]
+}
+
+absl_test("log_sink_test") {
+  sources = [ "src/absl/log/log_sink_test.cc" ]
+  if (is_ios) {
+    sources = []
+  }
+  deps = [
+    ":base_core_headers",
+    ":log",
+    ":log_internal_test_actions",
+    ":log_internal_test_helpers",
+    ":log_internal_test_matchers",
+    ":log_scoped_mock_log",
+    ":log_sink",
+    ":log_sink_registry",
+    ":strings_string_view",
+  ]
+}
+
+absl_test("log_streamer_test") {
+  sources = [ "src/absl/log/log_streamer_test.cc" ]
+  deps = [
+    ":base",
+    ":base_core_headers",
+    ":base_log_severity",
+    ":log",
+    ":log_internal_test_actions",
+    ":log_internal_test_helpers",
+    ":log_internal_test_matchers",
+    ":log_scoped_mock_log",
+    ":log_streamer",
+    ":strings_string_view",
+  ]
+}
+
+absl_test("log_modifier_methods_test") {
+  sources = [ "src/absl/log/log_modifier_methods_test.cc" ]
+  deps = [
+    ":log",
+    ":log_internal_test_actions",
+    ":log_internal_test_helpers",
+    ":log_internal_test_matchers",
+    ":log_scoped_mock_log",
+    ":log_sink",
+    ":strings",
+    ":strings_string_view",
+    ":time",
+  ]
+}
+
+absl_test("log_scoped_mock_log_test") {
+  sources = [ "src/absl/log/scoped_mock_log_test.cc" ]
+  if (is_ios) {
+    sources = []
+  }
+  deps = [
+    ":base_core_headers",
+    ":base_log_severity",
+    ":log",
+    ":log_globals",
+    ":log_internal_test_helpers",
+    ":log_internal_test_matchers",
+    ":log_scoped_mock_log",
+    ":memory",
+    ":strings",
+    ":strings_string_view",
+    ":synchronization",
+  ]
+}
+
+absl_test("log_stripping_test") {
+  sources = [ "src/absl/log/stripping_test.cc" ]
+  deps = [
+    ":base_log_severity",
+    ":base_strerror",
+    ":flags_program_name",
+    ":log",
+    ":log_check",
+    ":log_internal_test_helpers",
+    ":status",
+    ":strings",
+    ":strings_str_format",
+    ":strings_string_view",
+  ]
+}
+
+absl_test("log_structured_test") {
+  sources = [ "src/absl/log/structured_test.cc" ]
+  deps = [
+    ":base_core_headers",
+    ":log",
+    ":log_internal_test_helpers",
+    ":log_internal_test_matchers",
+    ":log_scoped_mock_log",
+    ":log_structured",
+  ]
+}
+
+# ==============================================================================
+# src/absl/log/internal/
+# ==============================================================================
+absl_source_set("log_internal_check_impl") {
+  public = [ "src/absl/log/internal/check_impl.h" ]
+  deps = [
+    ":base_core_headers",
+    ":log_internal_check_op",
+    ":log_internal_conditions",
+    ":log_internal_log_message",
+    ":log_internal_strip",
+  ]
+}
+
+absl_source_set("log_internal_check_op") {
+  sources = [ "src/absl/log/internal/check_op.cc" ]
+  public = [ "src/absl/log/internal/check_op.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_nullability",
+    ":debugging_leak_check",
+    ":log_internal_nullguard",
+    ":log_internal_nullstream",
+    ":log_internal_strip",
+    ":strings",
+  ]
+}
+
+absl_source_set("log_internal_conditions") {
+  sources = [ "src/absl/log/internal/conditions.cc" ]
+  public = [ "src/absl/log/internal/conditions.h" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":log_internal_voidify",
+  ]
+}
+
+absl_source_set("log_internal_config") {
+  public = [ "src/absl/log/internal/config.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+  ]
+}
+
+absl_source_set("log_internal_flags") {
+  public = [ "src/absl/log/internal/flags.h" ]
+  deps = [ ":flags_flag" ]
+}
+
+absl_source_set("log_internal_format") {
+  sources = [ "src/absl/log/internal/log_format.cc" ]
+  public = [ "src/absl/log/internal/log_format.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_log_severity",
+    ":log_internal_append_truncated",
+    ":log_internal_config",
+    ":log_internal_globals",
+    ":strings",
+    ":strings_str_format",
+    ":strings_string_view",
+    ":time",
+    ":types_span",
+  ]
+}
+
+absl_source_set("log_internal_globals") {
+  sources = [ "src/absl/log/internal/globals.cc" ]
+  public = [ "src/absl/log/internal/globals.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_log_severity",
+    ":base_raw_logging_internal",
+    ":strings",
+    ":strings_string_view",
+    ":time",
+  ]
+}
+
+absl_source_set("log_internal_log_impl") {
+  public = [ "src/absl/log/internal/log_impl.h" ]
+  deps = [
+    ":log_absl_vlog_is_on",
+    ":log_internal_conditions",
+    ":log_internal_log_message",
+    ":log_internal_strip",
+  ]
+}
+
+absl_source_set("log_internal_log_message") {
+  sources = [ "src/absl/log/internal/log_message.cc" ]
+  public = [ "src/absl/log/internal/log_message.h" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_errno_saver",
+    ":base_log_severity",
+    ":base_nullability",
+    ":base_raw_logging_internal",
+    ":base_strerror",
+    ":container_inlined_vector",
+    ":debugging_examine_stack",
+    ":log_entry",
+    ":log_globals",
+    ":log_internal_append_truncated",
+    ":log_internal_format",
+    ":log_internal_globals",
+    ":log_internal_log_sink_set",
+    ":log_internal_nullguard",
+    ":log_internal_proto",
+    ":log_sink",
+    ":log_sink_registry",
+    ":memory",
+    ":strings",
+    ":strings_string_view",
+    ":time",
+    ":types_span",
+  ]
+}
+
+absl_source_set("log_internal_append_truncated") {
+  public = [ "src/absl/log/internal/append_truncated.h" ]
+  deps = [
+    ":base_config",
+    ":strings_string_view",
+    ":types_span",
+  ]
+}
+
+absl_source_set("log_internal_log_sink_set") {
+  sources = [ "src/absl/log/internal/log_sink_set.cc" ]
+  public = [ "src/absl/log/internal/log_sink_set.h" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_log_severity",
+    ":base_no_destructor",
+    ":base_raw_logging_internal",
+    ":cleanup",
+    ":log_entry",
+    ":log_globals",
+    ":log_internal_config",
+    ":log_internal_globals",
+    ":log_sink",
+    ":strings_string_view",
+    ":synchronization",
+    ":types_span",
+  ]
+  if (is_android) {
+    libs = [ "log" ]
+  }
+}
+
+absl_source_set("log_internal_nullguard") {
+  sources = [ "src/absl/log/internal/nullguard.cc" ]
+  public = [ "src/absl/log/internal/nullguard.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+  ]
+}
+
+absl_source_set("log_internal_nullstream") {
+  public = [ "src/absl/log/internal/nullstream.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_log_severity",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("log_internal_strip") {
+  public = [ "src/absl/log/internal/strip.h" ]
+  deps = [
+    ":base_core_headers",
+    ":base_log_severity",
+    ":log_internal_log_message",
+    ":log_internal_nullstream",
+  ]
+}
+
+absl_source_set("log_internal_structured") {
+  public = [ "src/absl/log/internal/structured.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":log_internal_log_message",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("log_internal_test_actions") {
+  testonly = true
+  sources = [ "src/absl/log/internal/test_actions.cc" ]
+  public = [ "src/absl/log/internal/test_actions.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_log_severity",
+    ":log_entry",
+    ":strings",
+    ":strings_string_view",
+    ":time",
+  ]
+}
+
+absl_source_set("log_internal_test_helpers") {
+  testonly = true
+  sources = [ "src/absl/log/internal/test_helpers.cc" ]
+  public = [ "src/absl/log/internal/test_helpers.h" ]
+  deps = [
+    ":base_config",
+    ":base_log_severity",
+    ":log_globals",
+    ":log_initialize",
+    ":log_internal_globals",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_source_set("log_internal_test_matchers") {
+  testonly = true
+  sources = [ "src/absl/log/internal/test_matchers.cc" ]
+  public = [ "src/absl/log/internal/test_matchers.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_log_severity",
+    ":log_entry",
+    ":log_internal_test_helpers",
+    ":strings_string_view",
+    ":time",
+    "//third_party/googletest:gmock",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_source_set("log_internal_voidify") {
+  public = [ "src/absl/log/internal/voidify.h" ]
+  deps = [ ":base_config" ]
+}
+
+absl_source_set("log_internal_proto") {
+  sources = [
+    "src/absl/log/internal/proto.cc",
+    "src/absl/log/internal/structured_proto.cc",
+  ]
+  public = [
+    "src/absl/log/internal/proto.h",
+    "src/absl/log/internal/structured_proto.h",
+  ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":strings_string_view",
+    ":types_span",
+  ]
+}
+
+absl_source_set("log_internal_fnmatch") {
+  sources = [ "src/absl/log/internal/fnmatch.cc" ]
+  public = [ "src/absl/log/internal/fnmatch.h" ]
+  deps = [
+    ":base_config",
+    ":strings",
+  ]
+}
+
+absl_source_set("log_internal_vlog_config") {
+  sources = [ "src/absl/log/internal/vlog_config.cc" ]
+  public = [ "src/absl/log/internal/vlog_config.h" ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_no_destructor",
+    ":log_internal_fnmatch",
+    ":memory",
+    ":strings",
+    ":synchronization",
+    ":types_optional",
+  ]
+}
+
+absl_test("log_internal_stderr_log_sink_test") {
+  sources = [ "src/absl/log/internal/stderr_log_sink_test.cc" ]
+  if (is_apple || is_android) {
+    sources = []
+  }
+  deps = [
+    ":base_core_headers",
+    ":base_log_severity",
+    ":log",
+    ":log_globals",
+    ":log_internal_test_helpers",
+  ]
+}
+
+absl_test("log_internal_fnmatch_test") {
+  sources = [ "src/absl/log/internal/fnmatch_test.cc" ]
+  deps = [ ":log_internal_fnmatch" ]
+}
+
+# ==============================================================================
+# src/absl/memory/
+# ==============================================================================
+absl_source_set("memory") {
+  public = [ "src/absl/memory/memory.h" ]
+  deps = [
+    ":base_core_headers",
+    ":meta_type_traits",
+  ]
+}
+
+absl_test("memory_test") {
+  sources = [ "src/absl/memory/memory_test.cc" ]
+  deps = [
+    ":base_core_headers",
+    ":memory",
+  ]
+}
+
+# ==============================================================================
+# src/absl/meta/
+# ==============================================================================
+absl_source_set("meta_type_traits") {
+  public = [ "src/absl/meta/type_traits.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+  ]
+}
+
+absl_test("meta_type_traits_test") {
+  sources = [ "src/absl/meta/type_traits_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":meta_type_traits",
+    ":time",
+  ]
+}
+
+# ==============================================================================
+# src/absl/numeric/
+# ==============================================================================
+absl_source_set("numeric_bits") {
+  public = [
+    "src/absl/numeric/bits.h",
+    "src/absl/numeric/internal/bits.h",
+  ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+  ]
+}
+
+absl_source_set("numeric_int128") {
+  sources = [
+    "src/absl/numeric/int128.cc",
+    "src/absl/numeric/int128_have_intrinsic.inc",
+    "src/absl/numeric/int128_no_intrinsic.inc",
+  ]
+  public = [ "src/absl/numeric/int128.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":numeric_bits",
+    ":types_compare",
+  ]
+}
+
+absl_test("numeric_int128_test") {
+  sources = [
+    "src/absl/numeric/int128_stream_test.cc",
+    "src/absl/numeric/int128_test.cc",
+  ]
+  deps = [
+    ":base",
+    ":hash_testing",
+    ":meta_type_traits",
+    ":numeric_int128",
+    ":strings",
+    ":types_compare",
+  ]
+}
+
+absl_source_set("numeric_representation") {
+  public = [ "src/absl/numeric/internal/representation.h" ]
+  deps = [ ":base_config" ]
+}
+
+# ==============================================================================
+# src/absl/random/
+# ==============================================================================
+absl_source_set("random") {
+  public = [ "src/absl/random/random.h" ]
+  deps = [
+    ":random_distributions",
+    ":random_internal_nonsecure_base",
+    ":random_internal_pcg_engine",
+    ":random_internal_pool_urbg",
+    ":random_internal_randen_engine",
+    ":random_seed_sequences",
+  ]
+}
+
+absl_source_set("random_distributions") {
+  public = [
+    "src/absl/random/bernoulli_distribution.h",
+    "src/absl/random/beta_distribution.h",
+    "src/absl/random/discrete_distribution.h",
+    "src/absl/random/distributions.h",
+    "src/absl/random/exponential_distribution.h",
+    "src/absl/random/gaussian_distribution.h",
+    "src/absl/random/log_uniform_int_distribution.h",
+    "src/absl/random/poisson_distribution.h",
+    "src/absl/random/uniform_int_distribution.h",
+    "src/absl/random/uniform_real_distribution.h",
+    "src/absl/random/zipf_distribution.h",
+  ]
+  sources = [
+    "src/absl/random/discrete_distribution.cc",
+    "src/absl/random/gaussian_distribution.cc",
+  ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_internal",
+    ":meta_type_traits",
+    ":random_internal_distribution_caller",
+    ":random_internal_fast_uniform_bits",
+    ":random_internal_fastmath",
+    ":random_internal_generate_real",
+    ":random_internal_iostream_state_saver",
+    ":random_internal_traits",
+    ":random_internal_uniform_helper",
+    ":random_internal_wide_multiply",
+    ":strings",
+  ]
+}
+
+absl_source_set("random_seed_gen_exception") {
+  public = [ "src/absl/random/seed_gen_exception.h" ]
+  sources = [ "src/absl/random/seed_gen_exception.cc" ]
+  deps = [ ":base_config" ]
+}
+
+absl_source_set("random_seed_sequences") {
+  public = [ "src/absl/random/seed_sequences.h" ]
+  sources = [ "src/absl/random/seed_sequences.cc" ]
+  deps = [
+    ":base_config",
+    ":base_nullability",
+    ":random_internal_pool_urbg",
+    ":random_internal_salted_seed_seq",
+    ":random_internal_seed_material",
+    ":random_seed_gen_exception",
+    ":strings_string_view",
+    ":types_span",
+  ]
+}
+
+absl_source_set("random_bit_gen_ref") {
+  public = [ "src/absl/random/bit_gen_ref.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_fast_type_id",
+    ":meta_type_traits",
+    ":random",
+    ":random_internal_distribution_caller",
+    ":random_internal_fast_uniform_bits",
+  ]
+}
+
+absl_source_set("random_mock_distributions") {
+  testonly = true
+  public = [ "src/absl/random/mock_distributions.h" ]
+  deps = [
+    ":base_config",
+    ":random_distributions",
+    ":random_internal_mock_overload_set",
+    ":random_internal_mock_validators",
+    ":random_mocking_bit_gen",
+  ]
+}
+
+absl_source_set("random_mocking_bit_gen") {
+  testonly = true
+  public = [ "src/absl/random/mocking_bit_gen.h" ]
+  deps = [
+    ":base_config",
+    ":base_fast_type_id",
+    ":container_flat_hash_map",
+    ":meta_type_traits",
+    ":random",
+    ":random_internal_mock_helpers",
+    ":utility",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_test("random_distributions_test") {
+  sources = [ "src/absl/random/distributions_test.cc" ]
+  deps = [
+    ":meta_type_traits",
+    ":numeric_int128",
+    ":random",
+    ":random_distributions",
+    ":random_internal_distribution_test_util",
+  ]
+}
+
+absl_test("random_mock_distributions_test") {
+  sources = [ "src/absl/random/mock_distributions_test.cc" ]
+  deps = [
+    ":numeric_int128",
+    ":random",
+    ":random_distributions",
+    ":random_mock_distributions",
+    ":random_mocking_bit_gen",
+  ]
+}
+
+# ==============================================================================
+# src/absl/random/internal/
+# ==============================================================================
+absl_source_set("random_internal_traits") {
+  public = [ "src/absl/random/internal/traits.h" ]
+  deps = [
+    ":base_config",
+    ":numeric_bits",
+    ":numeric_int128",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_distribution_caller") {
+  public = [ "src/absl/random/internal/distribution_caller.h" ]
+  deps = [
+    ":base_config",
+    ":base_fast_type_id",
+    ":meta_type_traits",
+    ":utility",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_fast_uniform_bits") {
+  public = [ "src/absl/random/internal/fast_uniform_bits.h" ]
+  deps = [
+    ":base_config",
+    ":meta_type_traits",
+    ":random_internal_traits",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_seed_material") {
+  public = [ "src/absl/random/internal/seed_material.h" ]
+  sources = [ "src/absl/random/internal/seed_material.cc" ]
+  if (is_win) {
+    # TODO(mbonadei): In the bazel file this is -DEFAULTLIB:bcrypt.lib.
+    libs = [ "bcrypt.lib" ]
+  }
+  deps = [
+    ":base_core_headers",
+    ":base_dynamic_annotations",
+    ":base_raw_logging_internal",
+    ":random_internal_fast_uniform_bits",
+    ":strings",
+    ":strings_string_view",
+    ":types_optional",
+    ":types_span",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_pool_urbg") {
+  public = [ "src/absl/random/internal/pool_urbg.h" ]
+  sources = [ "src/absl/random/internal/pool_urbg.cc" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_endian",
+    ":base_raw_logging_internal",
+    ":random_internal_randen",
+    ":random_internal_seed_material",
+    ":random_internal_traits",
+    ":random_seed_gen_exception",
+    ":types_span",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_explicit_seed_seq") {
+  testonly = true
+  public = [ "src/absl/random/internal/explicit_seed_seq.h" ]
+  deps = [
+    ":base_config",
+    ":base_endian",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_sequence_urbg") {
+  testonly = true
+  public = [ "src/absl/random/internal/sequence_urbg.h" ]
+  deps = [ ":base_config" ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_salted_seed_seq") {
+  public = [ "src/absl/random/internal/salted_seed_seq.h" ]
+  deps = [
+    ":container_inlined_vector",
+    ":meta_type_traits",
+    ":random_internal_seed_material",
+    ":types_optional",
+    ":types_span",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_iostream_state_saver") {
+  public = [ "src/absl/random/internal/iostream_state_saver.h" ]
+  deps = [
+    ":meta_type_traits",
+    ":numeric_int128",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_generate_real") {
+  public = [ "src/absl/random/internal/generate_real.h" ]
+  deps = [
+    ":meta_type_traits",
+    ":numeric_bits",
+    ":random_internal_fastmath",
+    ":random_internal_traits",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_fastmath") {
+  public = [ "src/absl/random/internal/fastmath.h" ]
+  deps = [ ":numeric_bits" ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_wide_multiply") {
+  public = [ "src/absl/random/internal/wide_multiply.h" ]
+  deps = [
+    ":base_config",
+    ":numeric_bits",
+    ":numeric_int128",
+    ":random_internal_traits",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_nonsecure_base") {
+  public = [ "src/absl/random/internal/nonsecure_base.h" ]
+  deps = [
+    ":base_core_headers",
+    ":container_inlined_vector",
+    ":meta_type_traits",
+    ":random_internal_pool_urbg",
+    ":random_internal_salted_seed_seq",
+    ":random_internal_seed_material",
+    ":types_span",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_pcg_engine") {
+  public = [ "src/absl/random/internal/pcg_engine.h" ]
+  deps = [
+    ":base_config",
+    ":meta_type_traits",
+    ":numeric_bits",
+    ":numeric_int128",
+    ":random_internal_fastmath",
+    ":random_internal_iostream_state_saver",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_randen_engine") {
+  public = [ "src/absl/random/internal/randen_engine.h" ]
+  deps = [
+    ":base_endian",
+    ":meta_type_traits",
+    ":random_internal_iostream_state_saver",
+    ":random_internal_randen",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_platform") {
+  public = [
+    "src/absl/random/internal/platform.h",
+    "src/absl/random/internal/randen_traits.h",
+  ]
+  sources = [ "src/absl/random/internal/randen_round_keys.cc" ]
+  deps = [ ":base_config" ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_randen") {
+  public = [ "src/absl/random/internal/randen.h" ]
+  sources = [ "src/absl/random/internal/randen.cc" ]
+  deps = [
+    ":base_raw_logging_internal",
+    ":random_internal_platform",
+    ":random_internal_randen_hwaes",
+    ":random_internal_randen_slow",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_randen_slow") {
+  public = [ "src/absl/random/internal/randen_slow.h" ]
+  sources = [ "src/absl/random/internal/randen_slow.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_endian",
+    ":numeric_int128",
+    ":random_internal_platform",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_randen_hwaes") {
+  public = [
+    "src/absl/random/internal/randen_detect.h",
+    "src/absl/random/internal/randen_hwaes.h",
+  ]
+  sources = [ "src/absl/random/internal/randen_detect.cc" ]
+  deps = [
+    ":base_config",
+    ":random_internal_platform",
+    ":random_internal_randen_hwaes_impl",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_randen_hwaes_impl") {
+  sources = [
+    "src/absl/random/internal/randen_hwaes.cc",
+    "src/absl/random/internal/randen_hwaes.h",
+  ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":numeric_int128",
+    ":random_internal_platform",
+  ]
+  visibility = [ ":*" ]
+}
+
+executable("random_internal_gaussian_distribution_gentables") {
+  sources = [ "src/absl/random/internal/gaussian_distribution_gentables.cc" ]
+  deps = [
+    ":base_core_headers",
+    ":random_distributions",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_distribution_test_util") {
+  testonly = true
+  public = [
+    "src/absl/random/internal/chi_square.h",
+    "src/absl/random/internal/distribution_test_util.h",
+  ]
+  sources = [
+    "src/absl/random/internal/chi_square.cc",
+    "src/absl/random/internal/distribution_test_util.cc",
+  ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_raw_logging_internal",
+    ":strings",
+    ":strings_str_format",
+    ":strings_string_view",
+    ":types_span",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_mock_helpers") {
+  public = [ "src/absl/random/internal/mock_helpers.h" ]
+  deps = [
+    ":base_config",
+    ":base_fast_type_id",
+    ":types_optional",
+  ]
+}
+
+absl_source_set("random_internal_mock_overload_set") {
+  testonly = true
+  public = [ "src/absl/random/internal/mock_overload_set.h" ]
+  deps = [
+    ":base_config",
+    ":random_internal_mock_helpers",
+    ":random_mocking_bit_gen",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_source_set("random_internal_uniform_helper") {
+  public = [ "src/absl/random/internal/uniform_helper.h" ]
+  deps = [
+    ":base_config",
+    ":meta_type_traits",
+    ":numeric_int128",
+    ":random_internal_traits",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("random_internal_mock_validators") {
+  public = [ "src/absl/random/internal/mock_validators.h" ]
+  deps = [
+    ":base_config",
+    ":base_raw_logging_internal",
+    ":random_internal_iostream_state_saver",
+    ":random_internal_uniform_helper",
+    ":strings",
+    ":strings_string_view",
+  ]
+}
+
+# ==============================================================================
+# src/absl/status/
+# ==============================================================================
+absl_source_set("status") {
+  public = [
+    "src/absl/status/status.h",
+    "src/absl/status/status_payload_printer.h",
+  ]
+  sources = [
+    "src/absl/status/internal/status_internal.cc",
+    "src/absl/status/internal/status_internal.h",
+    "src/absl/status/status.cc",
+    "src/absl/status/status_payload_printer.cc",
+  ]
+  deps = [
+    ":base_atomic_hook",
+    ":base_config",
+    ":base_core_headers",
+    ":base_no_destructor",
+    ":base_nullability",
+    ":base_raw_logging_internal",
+    ":base_strerror",
+    ":container_inlined_vector",
+    ":debugging_stacktrace",
+    ":debugging_symbolize",
+    ":functional_function_ref",
+    ":memory",
+    ":strings",
+    ":strings_cord",
+    ":strings_str_format",
+    ":strings_string_view",
+    ":types_optional",
+    ":types_span",
+  ]
+
+  if (!is_win || is_clang) {
+    # TODO(crbug.com/331100926): Remove once fixed in upstream absl.
+    cflags_cc += [ "-Wno-deprecated-pragma" ]
+  }
+}
+
+absl_test("status_test") {
+  sources = [ "src/absl/status/status_test.cc" ]
+  deps = [
+    ":status",
+    ":strings",
+    ":strings_cord",
+    ":strings_str_format",
+  ]
+}
+
+absl_source_set("status_statusor") {
+  public = [ "src/absl/status/statusor.h" ]
+  sources = [
+    "src/absl/status/internal/statusor_internal.h",
+    "src/absl/status/statusor.cc",
+  ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_nullability",
+    ":base_raw_logging_internal",
+    ":meta_type_traits",
+    ":status",
+    ":strings",
+    ":strings_has_ostream_operator",
+    ":strings_str_format",
+    ":strings_string_view",
+    ":types_variant",
+    ":utility",
+  ]
+}
+
+absl_test("status_statusor_test") {
+  sources = [ "src/absl/status/statusor_test.cc" ]
+  deps = [
+    ":base",
+    ":memory",
+    ":status",
+    ":status_matchers",
+    ":status_statusor",
+    ":strings",
+    ":strings_string_view",
+    ":types_any",
+    ":types_variant",
+    ":utility",
+  ]
+}
+
+absl_source_set("status_matchers") {
+  testonly = true
+  public = [ "src/absl/status/status_matchers.h" ]
+  sources = [
+    "src/absl/status/internal/status_matchers.cc",
+    "src/absl/status/internal/status_matchers.h",
+  ]
+  deps = [
+    ":base_config",
+    ":status",
+    ":status_statusor",
+    ":strings_string_view",
+    "//third_party/googletest:gmock",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_test("status_matchers_test") {
+  sources = [ "src/absl/status/status_matchers_test.cc" ]
+  deps = [
+    ":status",
+    ":status_matchers",
+    ":status_statusor",
+    ":strings",
+  ]
+}
+
+# ==============================================================================
+# src/absl/strings/
+# ==============================================================================
+absl_source_set("strings_string_view") {
+  sources = [ "src/absl/strings/string_view.cc" ]
+  public = [ "src/absl/strings/string_view.h" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_nullability",
+    ":base_throw_delegate",
+  ]
+}
+
+absl_source_set("strings") {
+  sources = [
+    "src/absl/strings/ascii.cc",
+    "src/absl/strings/charconv.cc",
+    "src/absl/strings/escaping.cc",
+    "src/absl/strings/internal/charconv_bigint.cc",
+    "src/absl/strings/internal/charconv_bigint.h",
+    "src/absl/strings/internal/charconv_parse.cc",
+    "src/absl/strings/internal/charconv_parse.h",
+    "src/absl/strings/internal/damerau_levenshtein_distance.cc",
+    "src/absl/strings/internal/memutil.cc",
+    "src/absl/strings/internal/memutil.h",
+    "src/absl/strings/internal/stl_type_traits.h",
+    "src/absl/strings/internal/str_join_internal.h",
+    "src/absl/strings/internal/str_split_internal.h",
+    "src/absl/strings/internal/stringify_sink.cc",
+    "src/absl/strings/internal/stringify_sink.h",
+    "src/absl/strings/match.cc",
+    "src/absl/strings/numbers.cc",
+    "src/absl/strings/str_cat.cc",
+    "src/absl/strings/str_replace.cc",
+    "src/absl/strings/str_split.cc",
+    "src/absl/strings/substitute.cc",
+  ]
+  public = [
+    "src/absl/strings/ascii.h",
+    "src/absl/strings/charconv.h",
+    "src/absl/strings/escaping.h",
+    "src/absl/strings/has_absl_stringify.h",
+    "src/absl/strings/internal/damerau_levenshtein_distance.h",
+    "src/absl/strings/internal/string_constant.h",
+    "src/absl/strings/match.h",
+    "src/absl/strings/numbers.h",
+    "src/absl/strings/str_cat.h",
+    "src/absl/strings/str_join.h",
+    "src/absl/strings/str_replace.h",
+    "src/absl/strings/str_split.h",
+    "src/absl/strings/strip.h",
+    "src/absl/strings/substitute.h",
+  ]
+  public_deps = [
+    # string_view.h was once part of :strings, so string_view.h is
+    # re-exported for backwards compatibility.
+    # New code should directly depend on :string_view.
+    # TODO(crbug.com/1466243): Remove once all targets are migrated to
+    # :string_view.
+    ":strings_string_view",
+  ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_endian",
+    ":base_nullability",
+    ":base_raw_logging_internal",
+    ":base_throw_delegate",
+    ":memory",
+    ":meta_type_traits",
+    ":numeric_bits",
+    ":numeric_int128",
+    ":strings_charset",
+    ":strings_internal",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("strings_internal") {
+  sources = [
+    "src/absl/strings/internal/escaping.cc",
+    "src/absl/strings/internal/ostringstream.cc",
+    "src/absl/strings/internal/utf8.cc",
+  ]
+  public = [
+    "src/absl/strings/internal/escaping.h",
+    "src/absl/strings/internal/ostringstream.h",
+    "src/absl/strings/internal/resize_uninitialized.h",
+    "src/absl/strings/internal/utf8.h",
+  ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_endian",
+    ":base_raw_logging_internal",
+    ":meta_type_traits",
+  ]
+}
+
+absl_source_set("strings_str_format") {
+  public = [ "src/absl/strings/str_format.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_nullability",
+    ":strings_str_format_internal",
+    ":strings_string_view",
+    ":types_span",
+  ]
+}
+
+absl_source_set("strings_str_format_internal") {
+  sources = [
+    "src/absl/strings/internal/str_format/arg.cc",
+    "src/absl/strings/internal/str_format/bind.cc",
+    "src/absl/strings/internal/str_format/extension.cc",
+    "src/absl/strings/internal/str_format/float_conversion.cc",
+    "src/absl/strings/internal/str_format/output.cc",
+    "src/absl/strings/internal/str_format/parser.cc",
+  ]
+  public = [
+    "src/absl/strings/internal/str_format/arg.h",
+    "src/absl/strings/internal/str_format/bind.h",
+    "src/absl/strings/internal/str_format/checker.h",
+    "src/absl/strings/internal/str_format/constexpr_parser.h",
+    "src/absl/strings/internal/str_format/extension.h",
+    "src/absl/strings/internal/str_format/float_conversion.h",
+    "src/absl/strings/internal/str_format/output.h",
+    "src/absl/strings/internal/str_format/parser.h",
+  ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":container_fixed_array",
+    ":container_inlined_vector",
+    ":functional_function_ref",
+    ":meta_type_traits",
+    ":numeric_bits",
+    ":numeric_int128",
+    ":numeric_representation",
+    ":strings",
+    ":strings_string_view",
+    ":types_optional",
+    ":types_span",
+    ":utility",
+  ]
+}
+
+absl_test("strings_str_format_test") {
+  sources = [ "src/absl/strings/str_format_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":strings",
+    ":strings_cord",
+    ":strings_str_format",
+    ":types_span",
+  ]
+}
+
+absl_test("strings_str_format_extension_test") {
+  sources = [ "src/absl/strings/internal/str_format/extension_test.cc" ]
+  deps = [
+    ":strings",
+    ":strings_str_format",
+    ":strings_str_format_internal",
+  ]
+}
+
+absl_test("strings_str_format_arg_test") {
+  sources = [ "src/absl/strings/internal/str_format/arg_test.cc" ]
+  deps = [
+    ":base_config",
+    ":strings_str_format",
+    ":strings_str_format_internal",
+  ]
+}
+
+absl_test("strings_str_format_bind_test") {
+  sources = [ "src/absl/strings/internal/str_format/bind_test.cc" ]
+  deps = [ ":strings_str_format_internal" ]
+}
+
+absl_test("strings_str_format_checker_test") {
+  sources = [ "src/absl/strings/internal/str_format/checker_test.cc" ]
+  deps = [ ":strings_str_format" ]
+}
+
+absl_test("strings_str_format_convert_test") {
+  #if (is_fuchsia) {
+  # This test fails to compile on fuchsia x64 bot
+  #  sources = []
+  #} else {
+  sources = [ "src/absl/strings/internal/str_format/convert_test.cc" ]
+
+  #}
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_raw_logging_internal",
+    ":log",
+    ":numeric_int128",
+    ":strings",
+    ":strings_str_format",
+    ":strings_str_format_internal",
+    ":types_optional",
+    ":types_span",
+  ]
+}
+
+absl_test("strings_str_format_output_test") {
+  sources = [ "src/absl/strings/internal/str_format/output_test.cc" ]
+  deps = [
+    ":strings_cord",
+    ":strings_str_format_internal",
+  ]
+}
+
+absl_test("strings_str_format_parser_test") {
+  sources = [ "src/absl/strings/internal/str_format/parser_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":strings_str_format_internal",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("strings_charset") {
+  public = [ "src/absl/strings/charset.h" ]
+  deps = [
+    ":base_config",
+    ":strings_string_view",
+  ]
+}
+
+absl_test("strings_charset_test") {
+  sources = [ "src/absl/strings/charset_test.cc" ]
+  deps = [
+    ":strings",
+    ":strings_charset",
+  ]
+}
+
+absl_source_set("strings_cord_internal") {
+  sources = [
+    "src/absl/strings/internal/cord_internal.cc",
+    "src/absl/strings/internal/cord_rep_btree.cc",
+    "src/absl/strings/internal/cord_rep_btree_navigator.cc",
+    "src/absl/strings/internal/cord_rep_btree_reader.cc",
+    "src/absl/strings/internal/cord_rep_consume.cc",
+    "src/absl/strings/internal/cord_rep_crc.cc",
+  ]
+  public = [
+    "src/absl/strings/internal/cord_data_edge.h",
+    "src/absl/strings/internal/cord_internal.h",
+    "src/absl/strings/internal/cord_rep_btree.h",
+    "src/absl/strings/internal/cord_rep_btree_navigator.h",
+    "src/absl/strings/internal/cord_rep_btree_reader.h",
+    "src/absl/strings/internal/cord_rep_consume.h",
+    "src/absl/strings/internal/cord_rep_crc.h",
+    "src/absl/strings/internal/cord_rep_flat.h",
+  ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_endian",
+    ":base_internal",
+    ":base_raw_logging_internal",
+    ":base_throw_delegate",
+    ":container_compressed_tuple",
+    ":container_inlined_vector",
+    ":container_layout",
+    ":container_memory",
+    ":crc_cord_state",
+    ":functional_function_ref",
+    ":meta_type_traits",
+    ":strings",
+    ":strings_string_view",
+    ":types_span",
+  ]
+}
+
+absl_test("strings_cord_data_edge_test") {
+  sources = [ "src/absl/strings/internal/cord_data_edge_test.cc" ]
+  deps = [
+    ":base_config",
+    ":strings",
+    ":strings_cord_internal",
+    ":strings_cord_rep_test_util",
+  ]
+}
+
+absl_test("strings_cord_rep_btree_test") {
+  sources = [ "src/absl/strings/internal/cord_rep_btree_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_raw_logging_internal",
+    ":cleanup",
+    ":string_view",
+    ":strings",
+    ":strings_cord_internal",
+    ":strings_cord_rep_test_util",
+  ]
+}
+
+absl_test("strings_cord_rep_btree_reader_test") {
+  sources = [ "src/absl/strings/internal/cord_rep_btree_reader_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_raw_logging_internal",
+    ":strings_cord",
+    ":strings_cord_internal",
+    ":strings_cord_rep_test_util",
+    ":strings_string_view",
+  ]
+}
+
+absl_test("strings_cord_rep_crc_test") {
+  sources = [ "src/absl/strings/internal/cord_rep_crc_test.cc" ]
+  deps = [
+    ":base_config",
+    ":crc_cord_state",
+    ":strings_cord_internal",
+    ":strings_cord_rep_test_util",
+  ]
+}
+
+absl_source_set("strings_cordz_update_tracker") {
+  public = [ "src/absl/strings/internal/cordz_update_tracker.h" ]
+  visibility = [ ":*" ]
+  deps = [ ":base_config" ]
+}
+
+absl_test("strings_cordz_update_tracker_test") {
+  sources = [ "src/absl/strings/internal/cordz_update_tracker_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":strings_cordz_update_tracker",
+    ":synchronization",
+  ]
+}
+
+absl_source_set("strings_cord") {
+  sources = [
+    "src/absl/strings/cord.cc",
+    "src/absl/strings/cord_analysis.cc",
+    "src/absl/strings/cord_analysis.h",
+    "src/absl/strings/cord_buffer.cc",
+  ]
+  public = [
+    "src/absl/strings/cord.h",
+    "src/absl/strings/cord_buffer.h",
+  ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_endian",
+    ":base_nullability",
+    ":base_raw_logging_internal",
+    ":container_inlined_vector",
+    ":crc_cord_state",
+    ":crc_crc32c",
+    ":functional_function_ref",
+    ":meta_type_traits",
+    ":numeric_bits",
+    ":strings",
+    ":strings_cord_internal",
+    ":strings_cordz_functions",
+    ":strings_cordz_info",
+    ":strings_cordz_statistics",
+    ":strings_cordz_update_scope",
+    ":strings_cordz_update_tracker",
+    ":strings_internal",
+    ":strings_string_view",
+    ":types_compare",
+    ":types_optional",
+    ":types_span",
+  ]
+}
+
+absl_source_set("strings_cordz_handle") {
+  sources = [ "src/absl/strings/internal/cordz_handle.cc" ]
+  public = [ "src/absl/strings/internal/cordz_handle.h" ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base_config",
+    ":base_no_destructor",
+    ":base_raw_logging_internal",
+    ":synchronization",
+  ]
+}
+
+absl_source_set("strings_cordz_info") {
+  sources = [ "src/absl/strings/internal/cordz_info.cc" ]
+  public = [ "src/absl/strings/internal/cordz_info.h" ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_raw_logging_internal",
+    ":container_inlined_vector",
+    ":debugging_stacktrace",
+    ":strings_cord_internal",
+    ":strings_cordz_functions",
+    ":strings_cordz_handle",
+    ":strings_cordz_statistics",
+    ":strings_cordz_update_tracker",
+    ":synchronization",
+    ":time",
+    ":types_span",
+  ]
+}
+
+absl_source_set("strings_cordz_update_scope") {
+  public = [ "src/absl/strings/internal/cordz_update_scope.h" ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":strings_cord_internal",
+    ":strings_cordz_info",
+    ":strings_cordz_update_tracker",
+  ]
+}
+
+absl_test("strings_cordz_update_scope_test") {
+  sources = [ "src/absl/strings/internal/cordz_update_scope_test.cc" ]
+  deps = [
+    ":base_config",
+    ":strings_cord_internal",
+    ":strings_cordz_info",
+    ":strings_cordz_test_helpers",
+    ":strings_cordz_update_scope",
+    ":strings_cordz_update_tracker",
+  ]
+}
+
+absl_source_set("strings_cordz_sample_token") {
+  sources = [ "src/absl/strings/internal/cordz_sample_token.cc" ]
+  public = [ "src/absl/strings/internal/cordz_sample_token.h" ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base_config",
+    ":strings_cordz_handle",
+    ":strings_cordz_info",
+  ]
+}
+
+absl_source_set("strings_cordz_functions") {
+  sources = [ "src/absl/strings/internal/cordz_functions.cc" ]
+  public = [ "src/absl/strings/internal/cordz_functions.h" ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_raw_logging_internal",
+    ":profiling_exponential_biased",
+  ]
+}
+
+absl_source_set("strings_cordz_statistics") {
+  public = [ "src/absl/strings/internal/cordz_statistics.h" ]
+  visibility = [ ":*" ]
+  deps = [
+    ":base_config",
+    ":strings_cordz_update_tracker",
+  ]
+}
+
+absl_test("strings_cordz_functions_test") {
+  sources = [ "src/absl/strings/internal/cordz_functions_test.cc" ]
+  deps = [
+    ":base_config",
+    ":strings_cordz_functions",
+    ":strings_cordz_test_helpers",
+  ]
+}
+
+absl_test("strings_cordz_info_test") {
+  sources = [ "src/absl/strings/internal/cordz_info_test.cc" ]
+  deps = [
+    ":base_config",
+    ":debugging_stacktrace",
+    ":debugging_symbolize",
+    ":strings",
+    ":strings_cord_internal",
+    ":strings_cordz_handle",
+    ":strings_cordz_info",
+    ":strings_cordz_statistics",
+    ":strings_cordz_test_helpers",
+    ":strings_cordz_update_tracker",
+    ":types_span",
+  ]
+}
+
+absl_test("strings_cordz_info_statistics_test") {
+  sources = [ "src/absl/strings/internal/cordz_info_statistics_test.cc" ]
+  deps = [
+    ":base_config",
+    ":crc_cord_state",
+    ":strings_cord",
+    ":strings_cord_internal",
+    ":strings_cordz_info",
+    ":strings_cordz_sample_token",
+    ":strings_cordz_statistics",
+    ":strings_cordz_update_scope",
+    ":strings_cordz_update_tracker",
+    ":synchronization",
+    ":synchronization_thread_pool",
+  ]
+}
+
+absl_source_set("strings_cord_test_helpers") {
+  testonly = true
+  public = [ "src/absl/strings/cord_test_helpers.h" ]
+  deps = [
+    ":base_config",
+    ":strings_cord",
+    ":strings_cord_internal",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("strings_cord_rep_test_util") {
+  testonly = true
+  public = [ "src/absl/strings/internal/cord_rep_test_util.h" ]
+  deps = [
+    ":base_config",
+    ":base_raw_logging_internal",
+    ":strings_cord_internal",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("strings_cordz_test_helpers") {
+  testonly = true
+  public = [ "src/absl/strings/cordz_test_helpers.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_nullability",
+    ":strings",
+    ":strings_cord",
+    ":strings_cord_internal",
+    ":strings_cordz_info",
+    ":strings_cordz_sample_token",
+    ":strings_cordz_statistics",
+    ":strings_cordz_update_tracker",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+absl_test("strings_cord_buffer_test") {
+  public = [ "src/absl/strings/cord_buffer_test.cc" ]
+  deps = [
+    ":base_config",
+    ":strings_cord",
+    ":strings_cord_internal",
+    ":strings_cord_rep_test_util",
+    ":strings_string_view",
+    ":types_span",
+  ]
+}
+
+absl_test("strings_cordz_test") {
+  sources = [ "src/absl/strings/cordz_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_raw_logging_internal",
+    ":strings",
+    ":strings_cord",
+    ":strings_cord_internal",
+    ":strings_cord_test_helpers",
+    ":strings_cordz_functions",
+    ":strings_cordz_info",
+    ":strings_cordz_sample_token",
+    ":strings_cordz_statistics",
+    ":strings_cordz_test_helpers",
+    ":strings_cordz_update_tracker",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("strings_pow10_helper") {
+  testonly = true
+  sources = [ "src/absl/strings/internal/pow10_helper.cc" ]
+  public = [ "src/absl/strings/internal/pow10_helper.h" ]
+  visibility = [ ":*" ]
+  deps = [ ":base_config" ]
+}
+
+absl_test("strings_has_absl_stringify_test") {
+  sources = [ "src/absl/strings/has_absl_stringify_test.cc" ]
+  deps = [
+    ":strings",
+    ":types_optional",
+  ]
+}
+
+absl_source_set("strings_has_ostream_operator") {
+  public = [ "src/absl/strings/has_ostream_operator.h" ]
+  deps = [ ":base_config" ]
+}
+
+absl_test("strings_has_ostream_operator_test") {
+  sources = [ "src/absl/strings/has_ostream_operator_test.cc" ]
+  deps = [
+    ":strings_has_ostream_operator",
+    ":types_optional",
+  ]
+}
+
+absl_test("strings_ascii_test") {
+  sources = [ "src/absl/strings/ascii_test.cc" ]
+  deps = [
+    ":base_core_headers",
+    ":strings",
+  ]
+}
+
+absl_test("strings_damerau_levenshtein_distance_test") {
+  sources = [ "src/absl/strings/internal/damerau_levenshtein_distance_test.cc" ]
+  deps = [ ":strings" ]
+}
+
+absl_test("strings_match_test") {
+  sources = [ "src/absl/strings/match_test.cc" ]
+  deps = [ ":strings" ]
+}
+
+absl_test("strings_str_replace_test") {
+  sources = [ "src/absl/strings/str_replace_test.cc" ]
+  deps = [ ":strings" ]
+}
+
+absl_test("strings_string_view_test") {
+  sources = [ "src/absl/strings/string_view_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_dynamic_annotations",
+    ":meta_type_traits",
+    ":strings_string_view",
+  ]
+}
+
+absl_test("strings_cord_rep_btree_navigator_test") {
+  sources = [ "src/absl/strings/internal/cord_rep_btree_navigator_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_raw_logging_internal",
+    ":strings",
+    ":strings_cord_internal",
+    ":strings_cord_rep_test_util",
+    ":strings_string_view",
+  ]
+}
+
+absl_test("strings_char_formatting_test") {
+  sources = [ "src/absl/strings/char_formatting_test.cc" ]
+  deps = [
+    ":strings",
+    ":strings_str_format",
+  ]
+}
+
+# ==============================================================================
+# src/absl/synchronization/
+# ==============================================================================
+absl_source_set("synchronization_graphcycles_internal") {
+  sources = [ "src/absl/synchronization/internal/graphcycles.cc" ]
+  public = [ "src/absl/synchronization/internal/graphcycles.h" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_internal",
+    ":base_malloc_internal",
+    ":base_raw_logging_internal",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("synchronization_kernel_timeout_internal") {
+  sources = [ "src/absl/synchronization/internal/kernel_timeout.cc" ]
+  public = [ "src/absl/synchronization/internal/kernel_timeout.h" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_raw_logging_internal",
+    ":time",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_test("synchronization_kernel_timeout_internal_test") {
+  sources = [ "src/absl/synchronization/internal/kernel_timeout_test.cc" ]
+  deps = [
+    ":base_config",
+    ":random",
+    ":synchronization_kernel_timeout_internal",
+    ":time",
+  ]
+}
+
+absl_source_set("synchronization") {
+  sources = [
+    "src/absl/synchronization/barrier.cc",
+    "src/absl/synchronization/blocking_counter.cc",
+    "src/absl/synchronization/internal/create_thread_identity.cc",
+    "src/absl/synchronization/internal/futex_waiter.cc",
+    "src/absl/synchronization/internal/per_thread_sem.cc",
+    "src/absl/synchronization/internal/pthread_waiter.cc",
+    "src/absl/synchronization/internal/sem_waiter.cc",
+    "src/absl/synchronization/internal/stdcpp_waiter.cc",
+    "src/absl/synchronization/internal/waiter_base.cc",
+    "src/absl/synchronization/internal/win32_waiter.cc",
+    "src/absl/synchronization/mutex.cc",
+    "src/absl/synchronization/notification.cc",
+  ]
+  public = [
+    "src/absl/synchronization/barrier.h",
+    "src/absl/synchronization/blocking_counter.h",
+    "src/absl/synchronization/internal/create_thread_identity.h",
+    "src/absl/synchronization/internal/futex.h",
+    "src/absl/synchronization/internal/futex_waiter.h",
+    "src/absl/synchronization/internal/per_thread_sem.h",
+    "src/absl/synchronization/internal/pthread_waiter.h",
+    "src/absl/synchronization/internal/sem_waiter.h",
+    "src/absl/synchronization/internal/stdcpp_waiter.h",
+    "src/absl/synchronization/internal/waiter.h",
+    "src/absl/synchronization/internal/waiter_base.h",
+    "src/absl/synchronization/internal/win32_waiter.h",
+    "src/absl/synchronization/mutex.h",
+    "src/absl/synchronization/notification.h",
+  ]
+  deps = [
+    ":base",
+    ":base_atomic_hook",
+    ":base_config",
+    ":base_core_headers",
+    ":base_dynamic_annotations",
+    ":base_internal",
+    ":base_malloc_internal",
+    ":base_raw_logging_internal",
+    ":base_tracing_internal",
+    ":debugging_stacktrace",
+    ":debugging_symbolize",
+    ":synchronization_graphcycles_internal",
+    ":synchronization_kernel_timeout_internal",
+    ":time",
+  ]
+}
+
+absl_test("synchronization_barrier_test") {
+  sources = [ "src/absl/synchronization/barrier_test.cc" ]
+  deps = [
+    ":synchronization",
+    ":time",
+  ]
+}
+
+absl_test("synchronization_graphcycles_test") {
+  sources = [ "src/absl/synchronization/internal/graphcycles_test.cc" ]
+  deps = [
+    ":base_core_headers",
+    ":log",
+    ":log_check",
+    ":synchronization_graphcycles_internal",
+  ]
+}
+
+absl_source_set("synchronization_thread_pool") {
+  testonly = true
+  public = [ "src/absl/synchronization/internal/thread_pool.h" ]
+  deps = [
+    ":base_core_headers",
+    ":functional_any_invocable",
+    ":synchronization",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_test("synchronization_mutex_test") {
+  sources = [ "src/absl/synchronization/mutex_test.cc" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":log",
+    ":log_check",
+    ":memory",
+    ":synchronization",
+    ":synchronization_thread_pool",
+    ":time",
+  ]
+}
+
+absl_source_set("synchronization_per_thread_sem_test_common") {
+  testonly = true
+  sources = [ "src/absl/synchronization/internal/per_thread_sem_test.cc" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":strings",
+    ":synchronization",
+    ":time",
+    "//third_party/googletest:gtest",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_test("synchronization_per_thread_sem_test") {
+  deps = [
+    ":strings",
+    ":synchronization",
+    ":synchronization_per_thread_sem_test_common",
+    ":time",
+  ]
+}
+
+absl_test("synchronization_waiter_test") {
+  sources = [ "src/absl/synchronization/internal/waiter_test.cc" ]
+  deps = [
+    ":base_config",
+    ":random",
+    ":synchronization",
+    ":synchronization_kernel_timeout_internal",
+    ":synchronization_thread_pool",
+    ":time",
+  ]
+}
+
+# ==============================================================================
+# src/absl/time/
+# ==============================================================================
+absl_source_set("time") {
+  sources = [
+    "src/absl/time/civil_time.cc",
+    "src/absl/time/clock.cc",
+    "src/absl/time/duration.cc",
+    "src/absl/time/format.cc",
+    "src/absl/time/internal/get_current_time_chrono.inc",
+    "src/absl/time/internal/get_current_time_posix.inc",
+    "src/absl/time/time.cc",
+  ]
+  public = [
+    "src/absl/time/civil_time.h",
+    "src/absl/time/clock.h",
+    "src/absl/time/time.h",
+  ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_raw_logging_internal",
+    ":numeric_int128",
+    ":strings",
+    ":strings_string_view",
+    ":time_internal_cctz_civil_time",
+    ":time_internal_cctz_time_zone",
+    ":types_optional",
+  ]
+}
+
+absl_source_set("time_test_util") {
+  testonly = true
+  sources = [ "src/absl/time/internal/test_util.cc" ]
+  public = [ "src/absl/time/internal/test_util.h" ]
+  deps = [
+    ":base_config",
+    ":base_raw_logging_internal",
+    ":time",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_test("time_test") {
+  sources = [
+    "src/absl/time/civil_time_test.cc",
+    "src/absl/time/clock_test.cc",
+    "src/absl/time/duration_test.cc",
+    "src/absl/time/format_test.cc",
+    "src/absl/time/time_test.cc",
+    "src/absl/time/time_zone_test.cc",
+  ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":numeric_int128",
+    ":strings_str_format",
+    ":time",
+    ":time_internal_cctz_time_zone",
+    ":time_test_util",
+  ]
+}
+
+# ==============================================================================
+# src/absl/time/internal/cctz/
+# ==============================================================================
+absl_source_set("time_internal_cctz_civil_time") {
+  sources = [ "src/absl/time/internal/cctz/src/civil_time_detail.cc" ]
+  public = [
+    "src/absl/time/internal/cctz/include/cctz/civil_time.h",
+    "src/absl/time/internal/cctz/include/cctz/civil_time_detail.h",
+  ]
+  deps = [ ":base_config" ]
+}
+
+absl_source_set("time_internal_cctz_time_zone") {
+  sources = [
+    "src/absl/time/internal/cctz/src/time_zone_fixed.cc",
+    "src/absl/time/internal/cctz/src/time_zone_fixed.h",
+    "src/absl/time/internal/cctz/src/time_zone_format.cc",
+    "src/absl/time/internal/cctz/src/time_zone_if.cc",
+    "src/absl/time/internal/cctz/src/time_zone_if.h",
+    "src/absl/time/internal/cctz/src/time_zone_impl.cc",
+    "src/absl/time/internal/cctz/src/time_zone_impl.h",
+    "src/absl/time/internal/cctz/src/time_zone_info.cc",
+    "src/absl/time/internal/cctz/src/time_zone_info.h",
+    "src/absl/time/internal/cctz/src/time_zone_libc.cc",
+    "src/absl/time/internal/cctz/src/time_zone_libc.h",
+    "src/absl/time/internal/cctz/src/time_zone_lookup.cc",
+    "src/absl/time/internal/cctz/src/time_zone_posix.cc",
+    "src/absl/time/internal/cctz/src/time_zone_posix.h",
+    "src/absl/time/internal/cctz/src/tzfile.h",
+    "src/absl/time/internal/cctz/src/zone_info_source.cc",
+  ]
+  public = [
+    "src/absl/time/internal/cctz/include/cctz/time_zone.h",
+    "src/absl/time/internal/cctz/include/cctz/zone_info_source.h",
+  ]
+  defines = []
+  if (is_apple) {
+    frameworks = [ "Foundation.framework" ]
+
+    # Work-around for https://github.com/llvm/llvm-project/issues/117630
+    defines += [ "_XOPEN_SOURCE=700" ]
+  }
+  deps = [
+    ":base_config",
+    ":time_internal_cctz_civil_time",
+  ]
+}
+
+# ==============================================================================
+# src/absl/types/
+# ==============================================================================
+absl_source_set("types_any") {
+  public = [ "src/absl/types/any.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_fast_type_id",
+    ":meta_type_traits",
+    ":types_bad_any_cast",
+    ":utility",
+  ]
+}
+
+absl_source_set("types_bad_any_cast") {
+  public = [ "src/absl/types/bad_any_cast.h" ]
+  deps = [
+    ":base_config",
+    ":types_bad_any_cast_impl",
+  ]
+}
+
+absl_source_set("types_bad_any_cast_impl") {
+  sources = [ "src/absl/types/bad_any_cast.cc" ]
+  public = [ "src/absl/types/bad_any_cast.h" ]
+  deps = [
+    ":base_config",
+    ":base_raw_logging_internal",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("types_span") {
+  public = [ "src/absl/types/span.h" ]
+  sources = [ "src/absl/types/internal/span.h" ]
+  deps = [
+    ":algorithm",
+    ":base_config",
+    ":base_core_headers",
+    ":base_nullability",
+    ":base_throw_delegate",
+    ":meta_type_traits",
+  ]
+}
+
+absl_test("types_span_test") {
+  sources = [ "src/absl/types/span_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_exception_testing",
+    ":container_fixed_array",
+    ":container_inlined_vector",
+    ":hash_testing",
+    ":meta_type_traits",
+    ":strings",
+    ":types_span",
+  ]
+}
+
+absl_source_set("types_optional") {
+  sources = [ "src/absl/types/internal/optional.h" ]
+  public = [ "src/absl/types/optional.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_internal",
+    ":base_nullability",
+    ":memory",
+    ":meta_type_traits",
+    ":types_bad_optional_access",
+    ":utility",
+  ]
+}
+
+absl_source_set("types_bad_optional_access") {
+  sources = [ "src/absl/types/bad_optional_access.cc" ]
+  public = [ "src/absl/types/bad_optional_access.h" ]
+  deps = [
+    ":base_config",
+    ":base_raw_logging_internal",
+  ]
+}
+
+absl_source_set("types_bad_variant_access") {
+  sources = [ "src/absl/types/bad_variant_access.cc" ]
+  public = [ "src/absl/types/bad_variant_access.h" ]
+  deps = [
+    ":base_config",
+    ":base_raw_logging_internal",
+  ]
+}
+
+absl_source_set("types_variant") {
+  sources = [ "src/absl/types/internal/variant.h" ]
+  public = [ "src/absl/types/variant.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_internal",
+    ":meta_type_traits",
+    ":types_bad_variant_access",
+    ":utility",
+  ]
+}
+
+absl_source_set("types_compare") {
+  public = [ "src/absl/types/compare.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":meta_type_traits",
+  ]
+}
+
+absl_test("types_optional_test") {
+  sources = [ "src/absl/types/optional_test.cc" ]
+  deps = [
+    ":base_config",
+    ":log",
+    ":meta_type_traits",
+    ":strings_string_view",
+    ":types_optional",
+  ]
+}
+
+absl_test("types_variant_test") {
+  sources = [ "src/absl/types/variant_test.cc" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":memory",
+    ":meta_type_traits",
+    ":strings_string_view",
+    ":types_variant",
+  ]
+}
+
+# ==============================================================================
+# src/absl/utility/
+# ==============================================================================
+absl_source_set("utility") {
+  public = [ "src/absl/utility/utility.h" ]
+  deps = [
+    ":base_config",
+    ":base_internal",
+    ":meta_type_traits",
+  ]
+}
+
+absl_source_set("utility_if_constexpr") {
+  public = [ "src/absl/utility/internal/if_constexpr.h" ]
+  deps = [ ":base_config" ]
+}
+
+absl_test("utility_if_constexpr_test") {
+  sources = [ "src/absl/utility/internal/if_constexpr_test.cc" ]
+  deps = [ ":utility_if_constexpr" ]
+}
+
+# ==============================================================================
+# src/absl/crc/
+# ==============================================================================
+absl_source_set("crc_cpu_detect") {
+  public = [ "src/absl/crc/internal/cpu_detect.h" ]
+  sources = [ "src/absl/crc/internal/cpu_detect.cc" ]
+  deps = [
+    ":base",
+    ":base_config",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("crc_internal") {
+  public = [
+    "src/absl/crc/internal/crc.h",
+    "src/absl/crc/internal/crc32_x86_arm_combined_simd.h",
+  ]
+  sources = [
+    "src/absl/crc/internal/crc.cc",
+    "src/absl/crc/internal/crc_internal.h",
+    "src/absl/crc/internal/crc_x86_arm_combined.cc",
+  ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_endian",
+    ":base_prefetch",
+    ":base_raw_logging_internal",
+    ":crc_cpu_detect",
+    ":memory",
+    ":numeric_bits",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("crc_crc32c") {
+  public = [
+    "src/absl/crc/crc32c.h",
+    "src/absl/crc/internal/crc32c.h",
+    "src/absl/crc/internal/crc_memcpy.h",
+  ]
+  sources = [
+    "src/absl/crc/crc32c.cc",
+    "src/absl/crc/internal/crc32c_inline.h",
+    "src/absl/crc/internal/crc_memcpy_fallback.cc",
+    "src/absl/crc/internal/crc_memcpy_x86_arm_combined.cc",
+    "src/absl/crc/internal/crc_non_temporal_memcpy.cc",
+  ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_endian",
+    ":base_prefetch",
+    ":crc_cpu_detect",
+    ":crc_internal",
+    ":crc_non_temporal_memcpy",
+    ":strings_str_format",
+    ":strings_string_view",
+  ]
+}
+
+absl_test("crc_crc32c_test") {
+  sources = [ "src/absl/crc/crc32c_test.cc" ]
+  deps = [
+    ":crc_crc32c",
+    ":strings",
+    ":strings_str_format",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("crc_non_temporal_arm_intrinsics") {
+  public = [ "src/absl/crc/internal/non_temporal_arm_intrinsics.h" ]
+  deps = [ ":base_config" ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("crc_non_temporal_memcpy") {
+  public = [ "src/absl/crc/internal/non_temporal_memcpy.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":crc_non_temporal_arm_intrinsics",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_test("crc_memcpy_test") {
+  sources = [ "src/absl/crc/internal/crc_memcpy_test.cc" ]
+  deps = [
+    ":crc_crc32c",
+    ":memory",
+    ":random",
+    ":random_distributions",
+    ":strings",
+    ":strings_string_view",
+  ]
+}
+
+absl_test("crc_non_temporal_memcpy_test") {
+  sources = [ "src/absl/crc/internal/non_temporal_memcpy_test.cc" ]
+  deps = [ ":crc_non_temporal_memcpy" ]
+}
+
+absl_source_set("crc_cord_state") {
+  public = [ "src/absl/crc/internal/crc_cord_state.h" ]
+  sources = [ "src/absl/crc/internal/crc_cord_state.cc" ]
+  deps = [
+    ":base_config",
+    ":base_no_destructor",
+    ":crc_crc32c",
+    ":numeric_bits",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_test("crc_cord_state_test") {
+  sources = [ "src/absl/crc/internal/crc_cord_state_test.cc" ]
+  deps = [
+    ":crc_cord_state",
+    ":crc_crc32c",
+  ]
+}
+
+# ==============================================================================
+# src/absl/flags/
+# ==============================================================================
+absl_source_set("flags_path_util") {
+  public = [ "src/absl/flags/internal/path_util.h" ]
+  deps = [
+    ":base_config",
+    ":strings_string_view",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("flags_program_name") {
+  sources = [ "src/absl/flags/internal/program_name.cc" ]
+  public = [ "src/absl/flags/internal/program_name.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":flags_path_util",
+    ":strings_string_view",
+    ":synchronization",
+  ]
+  visibility = [ ":*" ]
+}
+
+# Since absl/flags are only used by some test binaries (e.g. in WebRTC),
+# there is no need to strip flags from mobile platforms binaries.
+# This does not affect Chromium.
+config("flags_absl_flags_config") {
+  defines = [ "ABSL_FLAGS_STRIP_NAMES=0" ]
+}
+
+absl_source_set("flags_config") {
+  sources = [ "src/absl/flags/usage_config.cc" ]
+  public_configs = [ ":flags_absl_flags_config" ]
+  public = [
+    "src/absl/flags/config.h",
+    "src/absl/flags/usage_config.h",
+  ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":flags_path_util",
+    ":flags_program_name",
+    ":strings",
+    ":strings_string_view",
+    ":synchronization",
+  ]
+}
+
+absl_source_set("flags_marshalling") {
+  sources = [ "src/absl/flags/marshalling.cc" ]
+  public = [ "src/absl/flags/marshalling.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_log_severity",
+    ":numeric_int128",
+    ":strings",
+    ":strings_str_format",
+    ":strings_string_view",
+    ":types_optional",
+  ]
+}
+
+absl_source_set("flags_commandlineflag_internal") {
+  visibility = [ ":*" ]
+  public = [ "src/absl/flags/internal/commandlineflag.h" ]
+  sources = [ "src/absl/flags/internal/commandlineflag.cc" ]
+  deps = [
+    ":base_config",
+    ":base_fast_type_id",
+  ]
+}
+
+absl_source_set("flags_commandlineflag") {
+  sources = [ "src/absl/flags/commandlineflag.cc" ]
+  public = [ "src/absl/flags/commandlineflag.h" ]
+  deps = [
+    ":base_config",
+    ":base_fast_type_id",
+    ":flags_commandlineflag_internal",
+    ":strings_string_view",
+    ":types_optional",
+  ]
+}
+
+absl_source_set("flags_private_handle_accessor") {
+  sources = [ "src/absl/flags/internal/private_handle_accessor.cc" ]
+  public = [ "src/absl/flags/internal/private_handle_accessor.h" ]
+  deps = [
+    ":base_config",
+    ":flags_commandlineflag",
+    ":flags_commandlineflag_internal",
+    ":strings_string_view",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("flags_reflection") {
+  sources = [ "src/absl/flags/reflection.cc" ]
+  public = [
+    "src/absl/flags/internal/registry.h",
+    "src/absl/flags/reflection.h",
+  ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_no_destructor",
+    ":container_flat_hash_map",
+    ":flags_commandlineflag",
+    ":flags_commandlineflag_internal",
+    ":flags_config",
+    ":flags_private_handle_accessor",
+    ":strings",
+    ":strings_string_view",
+    ":synchronization",
+  ]
+}
+
+absl_source_set("flags_flag_internal") {
+  sources = [ "src/absl/flags/internal/flag.cc" ]
+  public = [
+    "src/absl/flags/internal/flag.h",
+    "src/absl/flags/internal/sequence_lock.h",
+  ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_dynamic_annotations",
+    ":flags_commandlineflag",
+    ":flags_commandlineflag_internal",
+    ":flags_config",
+    ":flags_marshalling",
+    ":flags_reflection",
+    ":memory",
+    ":meta_type_traits",
+    ":strings",
+    ":strings_string_view",
+    ":synchronization",
+    ":utility",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("flags_flag") {
+  public = [
+    "src/absl/flags/declare.h",
+    "src/absl/flags/flag.h",
+  ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":flags_commandlineflag",
+    ":flags_config",
+    ":flags_flag_internal",
+    ":flags_reflection",
+    ":strings_string_view",
+  ]
+}
+
+absl_source_set("flags_usage_internal") {
+  sources = [ "src/absl/flags/internal/usage.cc" ]
+  public = [ "src/absl/flags/internal/usage.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":flags_commandlineflag",
+    ":flags_config",
+    ":flags_flag",
+    ":flags_flag_internal",
+    ":flags_path_util",
+    ":flags_private_handle_accessor",
+    ":flags_program_name",
+    ":flags_reflection",
+    ":strings",
+    ":strings_string_view",
+    ":synchronization",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("flags_usage") {
+  sources = [ "src/absl/flags/usage.cc" ]
+  public = [ "src/absl/flags/usage.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":base_raw_logging_internal",
+    ":flags_usage_internal",
+    ":strings_string_view",
+    ":synchronization",
+  ]
+}
+
+absl_source_set("flags_parse") {
+  sources = [ "src/absl/flags/parse.cc" ]
+  public = [
+    "src/absl/flags/internal/parse.h",
+    "src/absl/flags/parse.h",
+  ]
+  deps = [
+    ":algorithm_container",
+    ":base_config",
+    ":base_core_headers",
+    ":flags_commandlineflag",
+    ":flags_commandlineflag_internal",
+    ":flags_config",
+    ":flags_flag",
+    ":flags_flag_internal",
+    ":flags_private_handle_accessor",
+    ":flags_program_name",
+    ":flags_reflection",
+    ":flags_usage",
+    ":flags_usage_internal",
+    ":strings",
+    ":strings_string_view",
+    ":synchronization",
+  ]
+}
+
+absl_test("flags_flag_test") {
+  sources = [
+    "src/absl/flags/flag_test.cc",
+    "src/absl/flags/flag_test_defs.cc",
+  ]
+  deps = [
+    ":base_core_headers",
+    ":base_malloc_internal",
+    ":base_raw_logging_internal",
+    ":flags_config",
+    ":flags_flag",
+    ":flags_flag_internal",
+    ":flags_marshalling",
+    ":flags_parse",
+    ":flags_reflection",
+    ":numeric_int128",
+    ":strings",
+    ":strings_string_view",
+    ":time",
+    ":types_optional",
+  ]
+}
+
+# ==============================================================================
+# src/absl/profiling/
+# ==============================================================================
+absl_source_set("profiling_sample_recorder") {
+  public = [ "src/absl/profiling/internal/sample_recorder.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+    ":synchronization",
+    ":time",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_source_set("profiling_exponential_biased") {
+  sources = [ "src/absl/profiling/internal/exponential_biased.cc" ]
+  public = [ "src/absl/profiling/internal/exponential_biased.h" ]
+  deps = [
+    ":base_config",
+    ":base_core_headers",
+  ]
+  visibility = [ ":*" ]
+}
+
+absl_test("profiling_exponential_biased_test") {
+  sources = [ "src/absl/profiling/internal/exponential_biased_test.cc" ]
+  deps = [
+    ":profiling_exponential_biased",
+    ":strings",
+  ]
+}
+
+absl_source_set("profiling_periodic_sampler") {
+  sources = [ "src/absl/profiling/internal/periodic_sampler.cc" ]
+  public = [ "src/absl/profiling/internal/periodic_sampler.h" ]
+  deps = [
+    ":base_core_headers",
+    ":profiling_exponential_biased",
+  ]
+}
+
+absl_test("profiling_periodic_sampler_test") {
+  sources = [ "src/absl/profiling/internal/periodic_sampler_test.cc" ]
+  deps = [
+    ":base_core_headers",
+    ":profiling_periodic_sampler",
+  ]
+}
+
+# ==============================================================================
+# Original deps
+# ==============================================================================
+
 group("absl_component_deps") {
   public_deps = [
-    "//third_party/abseil-cpp/absl/algorithm",
-    "//third_party/abseil-cpp/absl/algorithm:container",
-    "//third_party/abseil-cpp/absl/base",
-    "//third_party/abseil-cpp/absl/base:config",
-    "//third_party/abseil-cpp/absl/base:core_headers",
-    "//third_party/abseil-cpp/absl/base:log_severity",
-    "//third_party/abseil-cpp/absl/base:no_destructor",
-    "//third_party/abseil-cpp/absl/base:nullability",
-    "//third_party/abseil-cpp/absl/base:prefetch",
-    "//third_party/abseil-cpp/absl/cleanup",
-    "//third_party/abseil-cpp/absl/container:btree",
-    "//third_party/abseil-cpp/absl/container:fixed_array",
-    "//third_party/abseil-cpp/absl/container:flat_hash_map",
-    "//third_party/abseil-cpp/absl/container:flat_hash_set",
-    "//third_party/abseil-cpp/absl/container:inlined_vector",
-    "//third_party/abseil-cpp/absl/container:node_hash_map",
-    "//third_party/abseil-cpp/absl/container:node_hash_set",
-    "//third_party/abseil-cpp/absl/debugging:failure_signal_handler",
-    "//third_party/abseil-cpp/absl/debugging:stacktrace",
-    "//third_party/abseil-cpp/absl/debugging:symbolize",
-    "//third_party/abseil-cpp/absl/functional:any_invocable",
-    "//third_party/abseil-cpp/absl/functional:bind_front",
-    "//third_party/abseil-cpp/absl/functional:function_ref",
-    "//third_party/abseil-cpp/absl/functional:overload",
-    "//third_party/abseil-cpp/absl/hash",
-    "//third_party/abseil-cpp/absl/log:absl_check",
-    "//third_party/abseil-cpp/absl/log:absl_log",
-    "//third_party/abseil-cpp/absl/log:absl_vlog_is_on",
-    "//third_party/abseil-cpp/absl/log:die_if_null",
-    "//third_party/abseil-cpp/absl/log:globals",
-    "//third_party/abseil-cpp/absl/log:initialize",
-    "//third_party/abseil-cpp/absl/log:log_entry",
-    "//third_party/abseil-cpp/absl/log:log_sink",
-    "//third_party/abseil-cpp/absl/log:log_sink_registry",
-    "//third_party/abseil-cpp/absl/memory",
-    "//third_party/abseil-cpp/absl/meta:type_traits",
-    "//third_party/abseil-cpp/absl/numeric:bits",
-    "//third_party/abseil-cpp/absl/numeric:int128",
-    "//third_party/abseil-cpp/absl/random",
-    "//third_party/abseil-cpp/absl/random:distributions",
-    "//third_party/abseil-cpp/absl/status",
-    "//third_party/abseil-cpp/absl/status:statusor",
-    "//third_party/abseil-cpp/absl/strings",
-    "//third_party/abseil-cpp/absl/strings:cord",
-    "//third_party/abseil-cpp/absl/strings:has_ostream_operator",
-    "//third_party/abseil-cpp/absl/strings:str_format",
-    "//third_party/abseil-cpp/absl/strings:string_view",
-    "//third_party/abseil-cpp/absl/synchronization",
-    "//third_party/abseil-cpp/absl/time",
-    "//third_party/abseil-cpp/absl/types:optional",
-    "//third_party/abseil-cpp/absl/types:span",
-    "//third_party/abseil-cpp/absl/types:variant",
-    "//third_party/abseil-cpp/absl/utility",
+    ":algorithm",
+    ":algorithm_container",
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":base_log_severity",
+    ":base_no_destructor",
+    ":base_nullability",
+    ":base_prefetch",
+    ":cleanup",
+    ":container_btree",
+    ":container_fixed_array",
+    ":container_flat_hash_map",
+    ":container_flat_hash_set",
+    ":container_inlined_vector",
+    ":container_node_hash_map",
+    ":container_node_hash_set",
+    ":debugging_failure_signal_handler",
+    ":debugging_stacktrace",
+    ":debugging_symbolize",
+    ":functional_any_invocable",
+    ":functional_bind_front",
+    ":functional_function_ref",
+    ":functional_overload",
+    ":hash",
+    ":log_absl_check",
+    ":log_absl_log",
+    ":log_absl_vlog_is_on",
+    ":log_die_if_null",
+    ":log_entry",
+    ":log_globals",
+    ":log_initialize",
+    ":log_sink",
+    ":log_sink_registry",
+    ":memory",
+    ":meta_type_traits",
+    ":numeric_bits",
+    ":numeric_int128",
+    ":random",
+    ":random_distributions",
+    ":status",
+    ":status_statusor",
+    ":strings",
+    ":strings_cord",
+    ":strings_has_ostream_operator",
+    ":strings_str_format",
+    ":strings_string_view",
+    ":synchronization",
+    ":time",
+    ":types_optional",
+    ":types_span",
+    ":types_variant",
+    ":utility",
   ]
 
   # Dependencies that preferably shouldn't be public in chromium.
   public_deps += [
     # public in abseil, but deprecated in chromium, yet used.
-    "//third_party/abseil-cpp/absl/base:dynamic_annotations",
+    ":base_dynamic_annotations",
 
     # base/logging.cc uses this non-public absl dependency while there no better
     # alternative to inject abort hook. See notes in `base/logging.cc`.
-    "//third_party/abseil-cpp/absl/base:raw_logging_internal",
+    ":base_raw_logging_internal",
   ]
 
   if (is_component_build) {
@@ -128,10 +4498,6 @@ group("absl_component_deps") {
 
   # The following dependencies currently don't build with NaCl.
   # TODO(https://crbug.com/1114625): Fix build errors and remove this section.
-  if (is_nacl) {
-    public_deps -=
-        [ "//third_party/abseil-cpp/absl/debugging:failure_signal_handler" ]
-  }
 
   visibility = [ ":absl" ]
 }
@@ -152,41 +4518,27 @@ source_set("absl_full") {
   if (!is_component_build) {
     public_deps += [ ":absl_full_deps" ]
   }
-
-  if (build_with_chromium) {
-    visibility = [
-      # Used by some test executables, but not by anything that is a
-      # part of Chrome.
-      "//components/optimization_guide/internal/*",
-      "//third_party/fuzztest:*",
-      "//third_party/webrtc/*",
-
-      # GoogleTest doesn't actually need absl_full, but this makes gn check
-      # happier.
-      "//third_party/googletest:*",
-    ]
-  }
 }
 
 group("absl_full_deps") {
   public_deps = [
     # Banned because each flag registration generates a static initializer, and
     # the flag registration mechanism is problematic in component builds.
-    "//third_party/abseil-cpp/absl/flags:config",
-    "//third_party/abseil-cpp/absl/flags:flag",
-    "//third_party/abseil-cpp/absl/flags:parse",
-    "//third_party/abseil-cpp/absl/flags:reflection",
-    "//third_party/abseil-cpp/absl/flags:usage",
+    ":flags_config",
+    ":flags_flag",
+    ":flags_parse",
+    ":flags_reflection",
+    ":flags_usage",
 
     # Banned because the LOG and CHECK macros conflict with Chrome's version of
     # those macros.
-    "//third_party/abseil-cpp/absl/log",
-    "//third_party/abseil-cpp/absl/log:check",
+    ":log",
+    ":log_check",
 
     # TODO(danilchap): Investigate if these targets need to be banned in 3rd party library code.
-    "//third_party/abseil-cpp/absl/log:globals",
-    "//third_party/abseil-cpp/absl/log:initialize",
-    "//third_party/abseil-cpp/absl/random:bit_gen_ref",
+    ":log_globals",
+    ":log_initialize",
+    ":random_bit_gen_ref",
   ]
 
   visibility = [
@@ -194,11 +4546,11 @@ group("absl_full_deps") {
     ":absl_full",
   ]
 
-  public_configs = [ "//third_party/abseil-cpp/absl/flags:absl_flags_config" ]
+  public_configs = [ ":flags_absl_flags_config" ]
 }
 
 config("absl_include_config") {
-  include_dirs = [ "." ]
+  include_dirs = [ "src" ]
 }
 
 config("absl_define_config") {
@@ -228,9 +4580,7 @@ config("absl_default_cflags_cc") {
       "-Wobjc-literal-conversion",
       "-Wstring-conversion",
     ]
-    if (!is_nacl) {
-      cflags_cc += [ "-Wbitfield-enum-conversion" ]
-    }
+    #cflags_cc += [ "-Wbitfield-enum-conversion" ]
   }
 }
 
@@ -274,126 +4624,116 @@ if (absl_build_tests) {
     test("absl_tests") {
       testonly = true
       deps = [
-        "absl/algorithm:algorithm_test",
-        "absl/algorithm:container_test",
-        "absl/base:config_test",
-        "absl/base:no_destructor_test",
-        "absl/base:nullability_default_nonnull_test",
-        "absl/base:nullability_test",
-        "absl/base:poison_test",
-        "absl/base:prefetch_test",
-        "absl/base:tracing_internal_strong_test",
-        "absl/base:tracing_internal_weak_test",
-        "absl/cleanup:cleanup_test",
+        ":algorithm_container_test",
+        ":algorithm_test",
+        ":base_config_test",
+        ":base_no_destructor_test",
+        ":base_nullability_default_nonnull_test",
+        ":base_nullability_test",
+        ":base_poison_test",
+        ":base_prefetch_test",
+        ":base_tracing_internal_strong_test",
+        ":base_tracing_internal_weak_test",
+        ":cleanup_test",
 
         # TODO(mbonadei): Fix issue with EXPECT_DEATH and uncomment.
-        # "absl/container:btree_test",
-        "absl/container:common_policy_traits_test",
-        "absl/container:fixed_array_test",
-        "absl/container:flat_hash_map_test",
-        "absl/container:flat_hash_set_test",
-        "absl/container:hash_function_defaults_test",
-        "absl/container:inlined_vector_test",
-        "absl/container:node_hash_map_test",
-        "absl/container:node_hash_set_test",
-        "absl/container:node_slot_policy_test",
-        "absl/container:raw_hash_set_allocator_test",
-        "absl/container:raw_hash_set_test",
-        "absl/container:sample_element_size_test",
-        "absl/crc:crc32c_test",
-        "absl/crc:crc_cord_state_test",
-        "absl/crc:crc_memcpy_test",
-        "absl/crc:non_temporal_memcpy_test",
-        "absl/debugging:bounded_utf8_length_sequence_test",
-        "absl/debugging:decode_rust_punycode_test",
-        "absl/debugging:demangle_rust_test",
-        "absl/debugging:stacktrace_test",
-        "absl/debugging:utf8_for_code_point_test",
-        "absl/flags:flag_test",
-        "absl/functional:any_invocable_test",
-        "absl/functional:function_ref_test",
-        "absl/functional:overload_test",
-        "absl/hash:hash_instantiated_test",
-        "absl/hash:hash_test",
-        "absl/hash:low_level_hash_test",
-        "absl/log:absl_check_test",
-        "absl/log:absl_log_basic_test",
-        "absl/log:die_if_null_test",
-        "absl/log:flags_test",
-        "absl/log:globals_test",
-        "absl/log:log_entry_test",
-        "absl/log:log_format_test",
-        "absl/log:log_macro_hygiene_test",
-        "absl/log:log_modifier_methods_test",
-        "absl/log:log_sink_test",
-        "absl/log:log_streamer_test",
-        "absl/log:scoped_mock_log_test",
-        "absl/log:stripping_test",
-        "absl/log:vlog_is_on_test",
-        "absl/log/internal:fnmatch_test",
-        "absl/log/internal:stderr_log_sink_test",
-        "absl/memory:memory_test",
-        "absl/meta:type_traits_test",
-        "absl/numeric:int128_test",
-        "absl/profiling:exponential_biased_test",
-        "absl/profiling:periodic_sampler_test",
-        "absl/random:distributions_test",
-        "absl/random:mock_distributions_test",
-        "absl/status:status_matchers_test",
-        "absl/status:status_test",
-        "absl/status:statusor_test",
-        "absl/strings:ascii_test",
-        "absl/strings:char_formatting_test",
-        "absl/strings:charset_test",
-        "absl/strings:cord_buffer_test",
-        "absl/strings:cord_data_edge_test",
-        "absl/strings:cord_rep_btree_navigator_test",
-        "absl/strings:cord_rep_btree_reader_test",
-        "absl/strings:cord_rep_btree_test",
-        "absl/strings:cord_rep_crc_test",
-        "absl/strings:cordz_functions_test",
-        "absl/strings:cordz_info_statistics_test",
-        "absl/strings:cordz_info_test",
-        "absl/strings:cordz_test",
-        "absl/strings:cordz_update_scope_test",
-        "absl/strings:cordz_update_tracker_test",
-        "absl/strings:damerau_levenshtein_distance_test",
-        "absl/strings:has_absl_stringify_test",
-        "absl/strings:has_ostream_operator_test",
-        "absl/strings:match_test",
-        "absl/strings:str_format_arg_test",
-        "absl/strings:str_format_bind_test",
-        "absl/strings:str_format_checker_test",
-        "absl/strings:str_format_convert_test",
-        "absl/strings:str_format_extension_test",
-        "absl/strings:str_format_output_test",
-        "absl/strings:str_format_parser_test",
-        "absl/strings:str_format_test",
-        "absl/strings:str_replace_test",
-        "absl/strings:string_view_test",
-        "absl/synchronization:barrier_test",
-        "absl/synchronization:graphcycles_test",
-        "absl/synchronization:kernel_timeout_internal_test",
-        "absl/synchronization:mutex_test",
-        "absl/synchronization:per_thread_sem_test",
-        "absl/synchronization:waiter_test",
-        "absl/time:time_test",
-        "absl/types:optional_test",
-        "absl/types:span_test",
-        "absl/types:variant_test",
-        "absl/utility:if_constexpr_test",
+        ":container_btree_test",
+        ":container_common_policy_traits_test",
+        ":container_fixed_array_test",
+        ":container_flat_hash_map_test",
+        ":container_flat_hash_set_test",
+        ":container_hash_function_defaults_test",
+        ":container_inlined_vector_test",
+        ":container_node_hash_map_test",
+        ":container_node_hash_set_test",
+        ":container_node_slot_policy_test",
+        ":container_raw_hash_set_allocator_test",
+        ":container_raw_hash_set_test",
+        ":container_sample_element_size_test",
+        ":crc_cord_state_test",
+        ":crc_crc32c_test",
+        ":crc_memcpy_test",
+        ":crc_non_temporal_memcpy_test",
+        ":debugging_bounded_utf8_length_sequence_test",
+        ":debugging_decode_rust_punycode_test",
+        ":debugging_demangle_rust_test",
+        ":debugging_stacktrace_test",
+        ":debugging_utf8_for_code_point_test",
+        ":flags_flag_test",
+        ":functional_any_invocable_test",
+        ":functional_function_ref_test",
+        ":functional_overload_test",
+        ":hash_instantiated_test",
+        ":hash_low_level_hash_test",
+        ":hash_test",
+        ":log_absl_check_test",
+        ":log_absl_log_basic_test",
+        ":log_die_if_null_test",
+        ":log_entry_test",
+        ":log_flags_test",
+        ":log_format_test",
+        ":log_globals_test",
+        ":log_internal_fnmatch_test",
+        ":log_internal_stderr_log_sink_test",
+        ":log_macro_hygiene_test",
+        ":log_modifier_methods_test",
+        ":log_scoped_mock_log_test",
+        ":log_sink_test",
+        ":log_streamer_test",
+        ":log_stripping_test",
+        ":log_vlog_is_on_test",
+        ":memory_memory_test",
+        ":meta_type_traits_test",
+        ":numeric_int128_test",
+        ":profiling_exponential_biased_test",
+        ":profiling_periodic_sampler_test",
+        ":random_distributions_test",
+        ":random_mock_distributions_test",
+        ":status_status_matchers_test",
+        ":status_status_test",
+        ":status_statusor_test",
+        ":strings_ascii_test",
+        ":strings_char_formatting_test",
+        ":strings_charset_test",
+        ":strings_cord_buffer_test",
+        ":strings_cord_data_edge_test",
+        ":strings_cord_rep_btree_navigator_test",
+        ":strings_cord_rep_btree_reader_test",
+        ":strings_cord_rep_btree_test",
+        ":strings_cord_rep_crc_test",
+        ":strings_cordz_functions_test",
+        ":strings_cordz_info_statistics_test",
+        ":strings_cordz_info_test",
+        ":strings_cordz_test",
+        ":strings_cordz_update_scope_test",
+        ":strings_cordz_update_tracker_test",
+        ":strings_damerau_levenshtein_distance_test",
+        ":strings_has_absl_stringify_test",
+        ":strings_has_ostream_operator_test",
+        ":strings_match_test",
+        ":strings_str_format_arg_test",
+        ":strings_str_format_bind_test",
+        ":strings_str_format_checker_test",
+        ":strings_str_format_convert_test",
+        ":strings_str_format_extension_test",
+        ":strings_str_format_output_test",
+        ":strings_str_format_parser_test",
+        ":strings_str_format_test",
+        ":strings_str_replace_test",
+        ":strings_string_view_test",
+        ":synchronization_barrier_test",
+        ":synchronization_graphcycles_test",
+        ":synchronization_kernel_timeout_internal_test",
+        ":synchronization_mutex_test",
+        ":synchronization_per_thread_sem_test",
+        ":synchronization_waiter_test",
+        ":time_test",
+        ":types_optional_test",
+        ":types_span_test",
+        ":types_variant_test",
+        ":utility_if_constexpr_test",
         "//third_party/googletest:gtest_main",
       ]
     }
-  }
-
-  test("absl_hardening_tests") {
-    testonly = true
-    sources = [ "absl_hardening_test.cc" ]
-    deps = [
-      ":absl",
-      "//base/test:run_all_unittests",
-      "//third_party/googletest:gtest",
-    ]
   }
 }
