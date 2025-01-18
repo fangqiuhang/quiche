@@ -17,10 +17,8 @@
 #    deps = [ ":bar" ]
 #  }
 
-import("//build_overrides/build.gni")
-
 declare_args() {
-  absl_build_tests = build_with_chromium
+  absl_build_tests = false
 }
 
 template("absl_source_set") {
@@ -29,23 +27,9 @@ template("absl_source_set") {
       not_needed(invoker, "*")
     } else {
       forward_variables_from(invoker, "*")
-      configs -= [ "//build/config/compiler:chromium_code" ]
-      configs += [
-        "//build/config/compiler:no_chromium_code",
-        "//build/config/compiler:prevent_unsafe_narrowing",
-        "//third_party/abseil-cpp:absl_default_cflags_cc",
-        "//third_party/abseil-cpp:absl_define_config",
-      ]
 
       if (!defined(defines)) {
         defines = []
-      }
-      if (is_component_build) {
-        defines += [ "ABSL_BUILD_DLL" ]
-        if (!is_win && current_os != "aix") {
-          configs -= [ "//build/config/gcc:symbol_visibility_hidden" ]
-          configs += [ "//build/config/gcc:symbol_visibility_default" ]
-        }
       }
 
       if (!defined(public_configs)) {
@@ -57,26 +41,7 @@ template("absl_source_set") {
         # Within Chromium builds, restrict direct visibility of Abseil sources, so
         # users must depend on //third_party/abseil-cpp:absl. This prevents use of
         # banned targets like absl/types:any. A few targets require exceptions.
-        if (build_with_chromium) {
-          visibility = [
-            # Abseil itself.
-            "//third_party/abseil-cpp/*",
-
-            # GTest.  It unconditionally #includes any.h if pretty-print support
-            # for absl types is enabled.
-            "//third_party/googletest/*",
-          ]
-
-          if (!is_component_build) {
-            visibility += [
-              # Not used by Chromium directly.
-              "//chromecast/internal/*",
-              "//libassistant/*",
-            ]
-          }
-        } else {
-          visibility = [ "*" ]
-        }
+        visibility = [ "*" ]
       }
     }
   }
@@ -89,9 +54,7 @@ template("absl_test") {
     } else {
       forward_variables_from(invoker, "*")
       testonly = true
-      configs -= [ "//build/config/compiler:chromium_code" ]
       configs += [
-        "//build/config/compiler:no_chromium_code",
         "//third_party/abseil-cpp:absl_default_cflags_cc",
         "//third_party/abseil-cpp:absl_define_config",
         "//third_party/abseil-cpp:absl_test_config",
@@ -104,8 +67,8 @@ template("absl_test") {
 
       visibility = [ "//third_party/abseil-cpp/:*" ]
       deps += [
-        "//third_party/googletest:gmock",
-        "//third_party/googletest:gtest",
+        #"//third_party/googletest:gmock",
+        #"//third_party/googletest:gtest",
       ]
     }
   }
