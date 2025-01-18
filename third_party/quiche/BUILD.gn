@@ -24,10 +24,8 @@
 #
 #             (*) only used on platforms where epoll tests are built
 
-import("//build/config/chromeos/ui_mode.gni")
-import("//net/third_party/quiche/src/build/source_list.gni")
-import("//testing/libfuzzer/fuzzer_test.gni")
 import("//third_party/protobuf/proto_library.gni")
+import("//third_party/quiche/src/build/source_list.gni")
 
 build_epoll_based_tools = is_linux || is_chromeos
 
@@ -42,52 +40,59 @@ config("quiche_config") {
   include_dirs = [
     # The ordering here is important, since headers in overrides/ replace
     # headers in src/common/platform/default.
-    "overrides",
+    "base",
     "src/quiche/common/platform/default",
     "src",
   ]
 }
 
-component("quiche") {
+static_library("quiche") {
   # TODO(crbug.com/325102878): Remove once usage of the deprecated version of
   # absl::HexStringToBytes have been removed.
   cflags = [ "-Wno-deprecated-declarations" ]
   sources = [
-              "overrides/quiche_platform_impl/quiche_bug_tracker_impl.h",
-              "overrides/quiche_platform_impl/quiche_client_stats_impl.h",
-              "overrides/quiche_platform_impl/quiche_containers_impl.h",
-              "overrides/quiche_platform_impl/quiche_export_impl.h",
-              "overrides/quiche_platform_impl/quiche_iovec_impl.h",
-              "overrides/quiche_platform_impl/quiche_logging_impl.h",
-              "overrides/quiche_platform_impl/quiche_reference_counted_impl.h",
-              "overrides/quiche_platform_impl/quiche_server_stats_impl.h",
-              "overrides/quiche_platform_impl/quiche_stack_trace_impl.cc",
-              "overrides/quiche_platform_impl/quiche_stack_trace_impl.h",
-              "overrides/quiche_platform_impl/quiche_time_utils_impl.cc",
-              "overrides/quiche_platform_impl/quiche_time_utils_impl.h",
-              "overrides/quiche_platform_impl/quiche_url_utils_impl.cc",
-              "overrides/quiche_platform_impl/quiche_url_utils_impl.h",
               "src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.cc",
               "src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.h",
+              "src/quiche/common/platform/default/quiche_platform_impl/quiche_logging_impl.cc",
+              "src/quiche/common/platform/default/quiche_platform_impl/quiche_logging_impl.h",
               "src/quiche/http2/hpack/hpack_static_table_entries.inc",
             ] + quiche_core_hdrs + quiche_core_srcs + binary_http_srcs +
             binary_http_hdrs + oblivious_http_srcs + oblivious_http_hdrs
 
+  if (is_linux) {
+    sources += [
+      "src/quiche/common/platform/default/quiche_platform_impl/quiche_bug_tracker_impl.h",
+      "src/quiche/common/platform/default/quiche_platform_impl/quiche_client_stats_impl.h",
+      "src/quiche/common/platform/default/quiche_platform_impl/quiche_containers_impl.h",
+      "src/quiche/common/platform/default/quiche_platform_impl/quiche_export_impl.h",
+      "src/quiche/common/platform/default/quiche_platform_impl/quiche_iovec_impl.h",
+      "src/quiche/common/platform/default/quiche_platform_impl/quiche_reference_counted_impl.h",
+      "src/quiche/common/platform/default/quiche_platform_impl/quiche_server_stats_impl.h",
+      "src/quiche/common/platform/default/quiche_platform_impl/quiche_stack_trace_impl.cc",
+      "src/quiche/common/platform/default/quiche_platform_impl/quiche_stack_trace_impl.h",
+      "src/quiche/common/platform/default/quiche_platform_impl/quiche_time_utils_impl.cc",
+      "src/quiche/common/platform/default/quiche_platform_impl/quiche_time_utils_impl.h",
+      "src/quiche/common/platform/default/quiche_platform_impl/quiche_url_utils_impl.cc",
+      "src/quiche/common/platform/default/quiche_platform_impl/quiche_url_utils_impl.h",
+    ]
+  }
+
   configs += [ ":quiche_internal_config" ]
+  configs += [ "//third_party/googleurl:googleurl_config" ]
   all_dependent_configs = [ ":quiche_config" ]
 
   deps = [
-    "//net/third_party/uri_template",
+    "//third_party/abseil-cpp:flags_flag",
+    "//third_party/googleurl:url",
     "//third_party/protobuf:protobuf_lite",
     "//third_party/zlib",
   ]
 
   public_deps = [
     ":net_quic_proto",
-    "//base",
     "//third_party/abseil-cpp:absl",
     "//third_party/boringssl",
-    "//url",
+    "//third_party/googleurl:url",
   ]
 
   defines = [ "IS_QUICHE_IMPL" ]
@@ -102,16 +107,14 @@ proto_library("net_quic_proto") {
     "src/quiche/quic/core/proto/source_address_token.proto",
   ]
   cc_generator_options = "dllexport_decl=COMPONENT_EXPORT(QUICHE):"
-  cc_include = "base/component_export.h"
+  cc_include = "third_party/googleurl/src/polyfills/base/component_export.h"
   component_build_force_source_set = true
 
   proto_in_dir = "src"
 
-  link_deps = [ "//base" ]
+  link_public_deps = [ "//third_party/googleurl:url" ]
 
   defines = [ "IS_QUICHE_IMPL" ]
-
-  extra_configs = [ "//build/config/compiler:wexit_time_destructors" ]
 }
 
 proto_library("net_quic_test_tools_proto") {
@@ -122,11 +125,11 @@ proto_library("net_quic_test_tools_proto") {
   cc_include = "net/base/net_export.h"
   component_build_force_source_set = true
 
-  link_deps = [ "//net:net_export_header" ]
+  #link_deps = [ "//net:net_export_header" ]
 
   defines = [ "NET_IMPLEMENTATION" ]
 
-  extra_configs = [ "//build/config/compiler:wexit_time_destructors" ]
+  #extra_configs = [ "//build/config/compiler:wexit_time_destructors" ]
 }
 
 if (build_epoll_based_tools) {
@@ -136,17 +139,17 @@ if (build_epoll_based_tools) {
     cflags = [ "-Wno-deprecated-declarations" ]
     testonly = true
     sources = [
-                "overrides/quiche_platform_impl/quiche_udp_socket_platform_impl.h",
                 "src/quiche/common/platform/default/quiche_platform_impl/quiche_stream_buffer_allocator_impl.h",
+                "src/quiche/common/platform/default/quiche_platform_impl/quiche_udp_socket_platform_impl.h",
               ] + io_tool_support_srcs + io_tool_support_hdrs
 
     configs += [ ":quiche_internal_config" ]
     public_configs = [ ":quiche_config" ]
 
     deps = [
+      ":quiche",
       ":quiche_tool_support",
-      "//base",
-      "//net",
+      "//third_party/abseil-cpp:absl",
       "//third_party/boringssl",
     ]
   }
@@ -165,9 +168,9 @@ if (build_epoll_based_tools) {
     deps = [
       ":epoll_tool_support",
       ":quic_client_core",
+      ":quiche",
       ":quiche_tool_support",
-      "//base",
-      "//net",
+      "//third_party/abseil-cpp:absl",
       "//third_party/boringssl",
     ]
   }
@@ -187,8 +190,6 @@ if (build_epoll_based_tools) {
       ":epoll_tool_support",
       ":quic_server_core",
       ":quiche_tool_support",
-      "//base",
-      "//net",
       "//third_party/boringssl",
     ]
   }
@@ -204,7 +205,6 @@ if (build_epoll_based_tools) {
       ":epoll_tool_support",
       ":quiche_test_support",
       ":quiche_tool_support",
-      "//net",
     ]
   }
 
@@ -222,7 +222,6 @@ if (build_epoll_based_tools) {
     deps = [
       ":epoll_tool_support",
       ":quiche_tool_support",
-      "//net",
       "//third_party/boringssl",
       "//third_party/protobuf:protobuf_lite",
     ]
@@ -238,7 +237,7 @@ if (build_epoll_based_tools) {
     deps = [
       ":epoll_tool_support",
       ":quiche_tool_support",
-      "//net",
+      "//third_party/abseil-cpp:absl",
       "//third_party/boringssl",
       "//third_party/protobuf:protobuf_lite",
     ]
@@ -255,11 +254,6 @@ if (build_epoll_based_tools) {
       ":epoll_tool_support",
       ":quiche_test_support",
       ":quiche_tool_support",
-      "//base",
-      "//net",
-      "//net:gtest_util",
-      "//testing/gmock",
-      "//testing/gtest",
     ]
   }
 }
@@ -286,12 +280,6 @@ static_library("quiche_test_support") {
   deps = [
     ":quiche",
     ":quiche_tool_support",
-    "//base",
-    "//crypto:test_support",
-    "//net:quic_test_flags_utils",
-    "//net:test_support",
-    "//testing/gmock",
-    "//testing/gtest",
     "//third_party/boringssl",
     "//third_party/protobuf:protobuf_lite",
   ]
@@ -300,24 +288,23 @@ static_library("quiche_test_support") {
 static_library("quiche_tool_support") {
   testonly = true
   sources = [
-              "overrides/quiche_platform_impl/quiche_command_line_flags_impl.cc",
-              "overrides/quiche_platform_impl/quiche_command_line_flags_impl.h",
-              "overrides/quiche_platform_impl/quiche_default_proof_providers_impl.cc",
-              "overrides/quiche_platform_impl/quiche_default_proof_providers_impl.h",
-              "overrides/quiche_platform_impl/quiche_system_event_loop_impl.h",
+              "src/quiche/common/platform/default/quiche_platform_impl/quiche_command_line_flags_impl.cc",
+              "src/quiche/common/platform/default/quiche_platform_impl/quiche_command_line_flags_impl.h",
+              "src/quiche/common/platform/default/quiche_platform_impl/quiche_default_proof_providers_impl.cc",
+              "src/quiche/common/platform/default/quiche_platform_impl/quiche_default_proof_providers_impl.h",
               "src/quiche/common/platform/default/quiche_platform_impl/quiche_file_utils_impl.cc",
               "src/quiche/common/platform/default/quiche_platform_impl/quiche_file_utils_impl.h",
+              "src/quiche/common/platform/default/quiche_platform_impl/quiche_system_event_loop_impl.h",
             ] + quiche_tool_support_srcs + quiche_tool_support_hdrs
 
   configs += [ ":quiche_internal_config" ]
   public_configs = [ ":quiche_config" ]
 
   deps = [
-    "//base",
-    "//net",
+    ":quiche",
+    "//third_party/googleurl:url",
     "//third_party/protobuf:protobuf_lite",
     "//third_party/quic_trace:quic_trace_proto",
-    "//url",
   ]
 }
 
@@ -341,11 +328,7 @@ if (!is_ios) {
     configs += [ ":quiche_internal_config" ]
     public_configs = [ ":quiche_config" ]
 
-    deps = [
-      "//net",
-      "//net:quic_test_tools",
-      "//net:simple_quic_tools",
-    ]
+    deps = [ ":quiche" ]
   }
   source_set("quic_server_core") {
     testonly = true
@@ -358,8 +341,8 @@ if (!is_ios) {
     public_configs = [ ":quiche_config" ]
 
     deps = [
-      "//net",
-      "//net:simple_quic_tools",
+      #"//net",
+      #"//net:simple_quic_tools",
     ]
   }
 
@@ -375,10 +358,6 @@ if (!is_ios) {
     public_configs = [ ":quiche_config" ]
 
     deps = [
-      "//base",
-      "//build/win:default_exe_manifest",
-      "//net",
-      "//net:simple_quic_tools",
       "//third_party/boringssl",
       "//third_party/protobuf:protobuf_lite",
     ]
@@ -396,10 +375,6 @@ if (!is_ios) {
     public_configs = [ ":quiche_config" ]
 
     deps = [
-      "//base",
-      "//build/win:default_exe_manifest",
-      "//net",
-      "//net:simple_quic_tools",
       "//third_party/boringssl",
       "//third_party/protobuf:protobuf_lite",
     ]
@@ -413,10 +388,6 @@ if (!is_ios) {
     public_configs = [ ":quiche_config" ]
 
     deps = [
-      "//base",
-      "//build/win:default_exe_manifest",
-      "//net",
-      "//net:simple_quic_tools",
       "//third_party/boringssl",
       "//third_party/protobuf:protobuf_lite",
     ]
@@ -429,13 +400,7 @@ if (!is_ios) {
     public_configs = [ ":quiche_config" ]
 
     sources = [ "src/quiche/quic/tools/qpack_offline_decoder_bin.cc" ]
-    deps = [
-      "//base",
-      "//net",
-      "//net:quic_test_tools",
-      "//net:simple_quic_tools",
-      "//testing/gmock",
-    ]
+    deps = []
   }
 }
 
@@ -734,12 +699,6 @@ source_set("quiche_tests") {
   deps = [
     ":blind_sign_auth",
     ":blind_sign_auth_test_support",
-    "//net",
-    "//net:quic_test_tools",
-    "//net:simple_quic_tools",
-    "//net:spdy_test_tools",
-    "//testing/gmock",
-    "//testing/gtest",
   ]
   if (is_ios) {
     deps += [ ":test_data" ]
@@ -748,7 +707,6 @@ source_set("quiche_tests") {
 
   if (build_epoll_based_tools) {
     sources += [
-      "overrides/quiche_platform_impl/quiche_command_line_flags_test.cc",
       "src/quiche/quic/core/chlo_extractor_test.cc",
       "src/quiche/quic/core/http/end_to_end_test.cc",
       "src/quiche/quic/core/http/quic_spdy_client_session_test.cc",
@@ -771,77 +729,7 @@ source_set("quiche_tests") {
   }
 }
 
-fuzzer_test("net_quic_framer_fuzzer") {
-  sources = [ "src/quiche/quic/test_tools/fuzzing/quic_framer_fuzzer.cc" ]
-
-  deps = [
-    "//net",
-    "//net:net_fuzzer_test_support",
-    "//net:quic_test_tools",
-    "//net:test_support",
-    "//net/data/ssl/certificates:generate_fuzzer_cert_includes",
-  ]
-}
-
-fuzzer_test("net_quic_framer_process_data_packet_fuzzer") {
-  sources = [ "src/quiche/quic/test_tools/fuzzing/quic_framer_process_data_packet_fuzzer.cc" ]
-
-  deps = [
-    "//net",
-    "//net:net_fuzzer_test_support",
-    "//net:quic_test_tools",
-    "//net:test_support",
-    "//net/data/ssl/certificates:generate_fuzzer_cert_includes",
-  ]
-}
-
-fuzzer_test("net_qpack_decoder_fuzzer") {
-  sources = [ "src/quiche/quic/core/qpack/fuzzer/qpack_decoder_fuzzer.cc" ]
-  deps = [
-    "//base",
-    "//net",
-    "//net:net_fuzzer_test_support",
-    "//net:quic_test_tools",
-    "//net:test_support",
-  ]
-}
-
-fuzzer_test("net_qpack_encoder_stream_receiver_fuzzer") {
-  sources = [
-    "src/quiche/quic/core/qpack/fuzzer/qpack_encoder_stream_receiver_fuzzer.cc",
-  ]
-  deps = [
-    "//base",
-    "//net",
-    "//net:net_fuzzer_test_support",
-  ]
-}
-
-fuzzer_test("net_qpack_encoder_stream_sender_fuzzer") {
-  sources = [
-    "src/quiche/quic/core/qpack/fuzzer/qpack_encoder_stream_sender_fuzzer.cc",
-  ]
-  deps = [
-    "//base",
-    "//net",
-    "//net:net_fuzzer_test_support",
-    "//net:quic_test_tools",
-    "//net:test_support",
-  ]
-}
-
-fuzzer_test("net_qpack_round_trip_fuzzer") {
-  sources = [ "src/quiche/quic/core/qpack/fuzzer/qpack_round_trip_fuzzer.cc" ]
-  deps = [
-    "//base",
-    "//net",
-    "//net:net_fuzzer_test_support",
-    "//net:quic_test_tools",
-    "//net:test_support",
-  ]
-}
-
-component("blind_sign_auth") {
+source_set("blind_sign_auth") {
   sources = [
     "src/quiche/blind_sign_auth/blind_sign_auth.cc",
     "src/quiche/blind_sign_auth/blind_sign_auth.h",
@@ -857,20 +745,11 @@ component("blind_sign_auth") {
 
   deps = [
     ":quiche",
-    "//base",
     "//third_party/abseil-cpp:absl",
-    "//third_party/anonymous_tokens:rsa_bssa_public_metadata_client",
     "//third_party/boringssl",
-    "//url",
   ]
 
-  public_deps = [
-    ":blind_sign_auth_proto",
-    "//third_party/anonymous_tokens:anonymous_tokens_rsa_bssa_client",
-    "//third_party/anonymous_tokens:crypto_utils",
-    "//third_party/anonymous_tokens:proto_utils",
-    "//third_party/anonymous_tokens:tokens_encodings",
-  ]
+  public_deps = [ ":blind_sign_auth_proto" ]
 
   defines = [ "IS_QUICHE_IMPL" ]
 }
@@ -887,20 +766,21 @@ proto_library("blind_sign_auth_proto") {
 
   sources = protobuf_blind_sign_auth
   cc_generator_options = "lite=true,dllexport_decl=COMPONENT_EXPORT(QUICHE):"
+
   cc_include = "base/component_export.h"
   component_build_force_source_set = true
 
   proto_in_dir = "src"
 
-  link_public_deps = [ "//base" ]
+  #link_public_deps = [ "//third_party/quiche" ]
 
-  deps = [ "//third_party/anonymous_tokens:anonymous_tokens_cc_proto" ]
+  #deps = [ "//third_party/anonymous_tokens:anonymous_tokens_cc_proto" ]
 
   import_dirs = [ "//third_party/anonymous_tokens/src/" ]
 
   defines = [ "IS_QUICHE_IMPL" ]
 
-  extra_configs = [ "//build/config/compiler:wexit_time_destructors" ]
+  #extra_configs = [ "//build/config/compiler:wexit_time_destructors" ]
 }
 
 source_set("blind_sign_auth_test_support") {
@@ -919,8 +799,9 @@ source_set("blind_sign_auth_test_support") {
     ":quiche_test_support",
     ":quiche_tool_support",
   ]
-  public_deps =
-      [ "//third_party/anonymous_tokens:anonymous_tokens_test_support" ]
+
+  #public_deps =
+  #    [ "//third_party/anonymous_tokens:anonymous_tokens_test_support" ]
 }
 
 if (is_android) {
