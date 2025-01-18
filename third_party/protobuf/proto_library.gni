@@ -355,7 +355,7 @@ template("proto_library") {
       ":$py_runtime_name",
       ":$source_set_name",
     ]
-    script = "//tools/protoc_wrapper/protoc_wrapper.py"
+    script = "//third_party/protobuf/protoc_wrapper/protoc_wrapper.py"
     args = protos
 
     sources =
