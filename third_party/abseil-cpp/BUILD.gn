@@ -4457,6 +4457,7 @@ group("absl_component_deps") {
     ":log_absl_vlog_is_on",
     ":log_die_if_null",
     ":log_entry",
+    ":log_flags",
     ":log_globals",
     ":log_initialize",
     ":log_sink",
