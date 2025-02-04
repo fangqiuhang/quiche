@@ -2,9 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-#import("//build/config/compiler/compiler.gni")
-#import("//build/config/dcheck_always_on.gni")
-
 declare_args() {
   # Expose zlib's symbols, used by Node.js to provide zlib APIs for its native
   # modules.
@@ -12,11 +9,15 @@ declare_args() {
 }
 
 config("zlib_config") {
-  include_dirs = [ "." ]
+  include_dirs = [
+    ".",
+    "src",
+  ]
 
   if (zlib_symbols_visible) {
     defines = [ "ZLIB_DLL" ]
   }
+  cflags_c = [ "-Wno-implicit-function-declaration" ]
 }
 
 config("zlib_internal_config") {
@@ -43,15 +44,14 @@ source_set("zlib_common_headers") {
   visibility = [ ":*" ]
 
   sources = [
-    "chromeconf.h",
-    "deflate.h",
-    "inffast.h",
-    "inffixed.h",
-    "inflate.h",
-    "inftrees.h",
-    "zconf.h",
-    "zlib.h",
-    "zutil.h",
+    "src/deflate.h",
+    "src/inffast.h",
+    "src/inffixed.h",
+    "src/inflate.h",
+    "src/inftrees.h",
+    "src/zconf.h",
+    "src/zlib.h",
+    "src/zutil.h",
   ]
 }
 
@@ -67,99 +67,6 @@ if ((current_cpu == "arm" || current_cpu == "arm64") &&
 
 use_x86_x64_optimizations =
     (current_cpu == "x86" || current_cpu == "x64") && !is_ios
-
-config("zlib_adler32_simd_config") {
-  if (use_x86_x64_optimizations) {
-    defines = [ "ADLER32_SIMD_SSSE3" ]
-    if (is_win) {
-      defines += [ "X86_WINDOWS" ]
-    } else {
-      defines += [ "X86_NOT_WINDOWS" ]
-    }
-  }
-
-  if (use_arm_neon_optimizations) {
-    defines = [ "ADLER32_SIMD_NEON" ]
-  }
-}
-
-source_set("zlib_adler32_simd") {
-  visibility = [ ":*" ]
-
-  if (use_x86_x64_optimizations) {
-    sources = [
-      "adler32_simd.c",
-      "adler32_simd.h",
-    ]
-
-    if (!is_win || is_clang) {
-      cflags = [ "-mssse3" ]
-    }
-  }
-
-  if (use_arm_neon_optimizations) {
-    sources = [
-      "adler32_simd.c",
-      "adler32_simd.h",
-    ]
-  }
-
-  configs += [ ":zlib_internal_config" ]
-
-  public_configs = [ ":zlib_adler32_simd_config" ]
-
-  public_deps = [ ":zlib_common_headers" ]
-}
-
-if (use_arm_neon_optimizations) {
-  config("zlib_arm_crc32_config") {
-    defines = [ "CRC32_ARMV8_CRC32" ]
-    if (is_android) {
-      defines += [ "ARMV8_OS_ANDROID" ]
-    } else if (is_linux || is_chromeos) {
-      defines += [ "ARMV8_OS_LINUX" ]
-    } else if (is_mac) {
-      defines += [ "ARMV8_OS_MACOS" ]
-    } else if (is_ios) {
-      defines += [ "ARMV8_OS_IOS" ]
-    } else if (is_fuchsia) {
-      defines += [ "ARMV8_OS_FUCHSIA" ]
-    } else if (is_win) {
-      defines += [ "ARMV8_OS_WINDOWS" ]
-    } else {
-      assert(false, "Unsupported ARM OS")
-    }
-  }
-
-  source_set("zlib_arm_crc32") {
-    visibility = [ ":*" ]
-
-    include_dirs = [ "." ]
-
-    if (!is_win && !is_clang) {
-      assert(!use_thin_lto,
-             "ThinLTO fails mixing different module-level targets")
-      if (current_cpu == "arm64") {
-        cflags_c = [ "-march=armv8-a+aes+crc" ]
-      } else if (current_cpu == "arm") {
-        cflags_c = [ "-march=armv8-a+crc" ]
-      } else {
-        assert(false, "Unexpected cpu: $current_cpu")
-      }
-    }
-
-    sources = [
-      "crc32_simd.c",
-      "crc32_simd.h",
-    ]
-
-    configs += [ ":zlib_internal_config" ]
-
-    public_configs = [ ":zlib_arm_crc32_config" ]
-
-    public_deps = [ ":zlib_common_headers" ]
-  }
-}
 
 config("zlib_inflate_chunk_simd_config") {
   if (use_x86_x64_optimizations) {
@@ -183,7 +90,10 @@ source_set("zlib_inflate_chunk_simd") {
   visibility = [ ":*" ]
 
   if (use_x86_x64_optimizations || use_arm_neon_optimizations) {
-    include_dirs = [ "." ]
+    include_dirs = [
+      ".",
+      "src",
+    ]
 
     sources = [
       "contrib/optimizations/chunkcopy.h",
@@ -200,37 +110,6 @@ source_set("zlib_inflate_chunk_simd") {
   configs += [ ":zlib_warnings" ]
 
   public_configs = [ ":zlib_inflate_chunk_simd_config" ]
-
-  public_deps = [ ":zlib_common_headers" ]
-}
-
-config("zlib_crc32_simd_config") {
-  if (use_x86_x64_optimizations) {
-    defines = [ "CRC32_SIMD_SSE42_PCLMUL" ]
-  }
-}
-
-source_set("zlib_crc32_simd") {
-  visibility = [ ":*" ]
-
-  if (use_x86_x64_optimizations) {
-    sources = [
-      "crc32_simd.c",
-      "crc32_simd.h",
-      "crc_folding.c",
-    ]
-
-    if (!is_win || is_clang) {
-      cflags = [
-        "-msse4.2",
-        "-mpclmul",
-      ]
-    }
-  }
-
-  configs += [ ":zlib_internal_config" ]
-
-  public_configs = [ ":zlib_crc32_simd_config" ]
 
   public_deps = [ ":zlib_common_headers" ]
 }
@@ -279,38 +158,36 @@ static_library("zlib") {
   }
 
   sources = [
-    "adler32.c",
-    "chromeconf.h",
-    "compress.c",
     "contrib/optimizations/insert_string.h",
     "cpu_features.c",
     "cpu_features.h",
-    "crc32.c",
-    "crc32.h",
-    "deflate.c",
-    "deflate.h",
-    "gzclose.c",
-    "gzguts.h",
-    "gzlib.c",
-    "gzread.c",
-    "gzwrite.c",
-    "infback.c",
-    "inffast.c",
-    "inffast.h",
-    "inffixed.h",
-    "inflate.h",
-    "inftrees.c",
-    "inftrees.h",
-    "trees.c",
-    "trees.h",
-    "uncompr.c",
-    "zconf.h",
-    "zlib.h",
-    "zutil.c",
-    "zutil.h",
+    "src/adler32.c",
+    "src/compress.c",
+    "src/crc32.c",
+    "src/crc32.h",
+    "src/deflate.c",
+    "src/deflate.h",
+    "src/gzclose.c",
+    "src/gzguts.h",
+    "src/gzlib.c",
+    "src/gzread.c",
+    "src/gzwrite.c",
+    "src/infback.c",
+    "src/inffast.c",
+    "src/inffast.h",
+    "src/inffixed.h",
+    "src/inflate.h",
+    "src/inftrees.c",
+    "src/inftrees.h",
+    "src/trees.c",
+    "src/trees.h",
+    "src/uncompr.c",
+    "src/zconf.h",
+    "src/zlib.h",
+    "src/zutil.c",
+    "src/zutil.h",
   ]
 
-  #defines = []
   deps = []
 
   if (!use_x86_x64_optimizations && !use_arm_neon_optimizations) {
@@ -321,18 +198,11 @@ static_library("zlib") {
 
   if (use_x86_x64_optimizations || use_arm_neon_optimizations) {
     deps += [
-      ":zlib_adler32_simd",
       ":zlib_inflate_chunk_simd",
       ":zlib_slide_hash_simd",
     ]
-
-    if (use_x86_x64_optimizations) {
-      deps += [ ":zlib_crc32_simd" ]
-    } else if (use_arm_neon_optimizations) {
-      deps += [ ":zlib_arm_crc32" ]
-    }
   } else {
-    sources += [ "inflate.c" ]
+    sources += [ "src/inflate.c" ]
   }
 
   if (is_android) {
@@ -363,26 +233,23 @@ config("minizip_warnings") {
 }
 
 static_library("minizip") {
-  include_dirs = [
-    ".",
-    "//third_party/zlib",
-  ]
+  include_dirs = [ "//third_party/zlib/src" ]
 
   sources = [
-    "contrib/minizip/ioapi.c",
-    "contrib/minizip/ioapi.h",
-    "contrib/minizip/iowin32.c",
-    "contrib/minizip/iowin32.h",
-    "contrib/minizip/unzip.c",
-    "contrib/minizip/unzip.h",
-    "contrib/minizip/zip.c",
-    "contrib/minizip/zip.h",
+    "src/contrib/minizip/ioapi.c",
+    "src/contrib/minizip/ioapi.h",
+    "src/contrib/minizip/iowin32.c",
+    "src/contrib/minizip/iowin32.h",
+    "src/contrib/minizip/unzip.c",
+    "src/contrib/minizip/unzip.h",
+    "src/contrib/minizip/zip.c",
+    "src/contrib/minizip/zip.h",
   ]
 
   if (!is_win) {
     sources -= [
-      "contrib/minizip/iowin32.c",
-      "contrib/minizip/iowin32.h",
+      "src/contrib/minizip/iowin32.c",
+      "src/contrib/minizip/iowin32.h",
     ]
   }
 
@@ -430,7 +297,7 @@ if (!is_win || target_os != "winuwp") {
   executable("minizip_bin") {
     include_dirs = [ "." ]
 
-    sources = [ "contrib/minizip/minizip.c" ]
+    sources = [ "src/contrib/minizip/minizip.c" ]
 
     if (is_clang) {
       cflags = [ "-Wno-incompatible-pointer-types-discards-qualifiers" ]
@@ -442,7 +309,7 @@ if (!is_win || target_os != "winuwp") {
   executable("miniunz_bin") {
     include_dirs = [ "." ]
 
-    sources = [ "contrib/minizip/miniunz.c" ]
+    sources = [ "src/contrib/minizip/miniunz.c" ]
 
     if (is_clang) {
       cflags = [ "-Wno-incompatible-pointer-types-discards-qualifiers" ]
