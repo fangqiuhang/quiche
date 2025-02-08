@@ -87,7 +87,7 @@ static_library("protobuf_lite") {
       protobuf_compiler_java_lite_sources + protobuf_compiler_java_lite_headers
 
   deps = [ "//third_party/abseil-cpp:absl" ]
-  public_deps = [ "//third_party/abseil-cpp/absl/log:absl_log" ]
+  public_deps = [ "//third_party/abseil-cpp:log_absl_log" ]
   configs += [
     # Must be after no_chromium_code for warning flags to be ordered
     # correctly.
@@ -242,7 +242,7 @@ if (current_toolchain == host_toolchain) {
     deps = [
       ":protoc_lib",
       "//third_party/abseil-cpp:absl",
-      "//third_party/abseil-cpp/absl/base:config",
+      "//third_party/abseil-cpp:base_config",
 
       # Default manifest on Windows (a no-op elsewhere).
     ]
