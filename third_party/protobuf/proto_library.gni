@@ -135,18 +135,10 @@
 #    ]
 #  }
 
-import("//build/config/cronet/config.gni")
-import("//build/config/sanitizers/sanitizers.gni")
-import("//build/toolchain/kythe.gni")
-
 declare_args() {
   # Allows subprojects to omit javascript dependencies (e.g.) closure_compiler
   # and google-closure-library.
-  enable_js_protobuf = !is_cronet_build
-}
-
-if (enable_js_protobuf) {
-  import("//third_party/closure_compiler/compile_js.gni")
+  enable_js_protobuf = false
 }
 
 if (host_os == "win") {
@@ -165,10 +157,6 @@ _this_dir = get_path_info(".", "abspath")
 _protoc_label = "$_this_dir:protoc($host_toolchain)"
 _protoc_path = get_label_info(_protoc_label, "root_out_dir") + "/protoc" +
                _host_executable_suffix
-_protoc_gen_js_label =
-    "//third_party/protobuf-javascript:protoc-gen-js($host_toolchain)"
-_protoc_gen_js_path = get_label_info(_protoc_gen_js_label, "root_out_dir") +
-                      "/protoc-gen-js" + _host_executable_suffix
 
 template("proto_library") {
   assert(defined(invoker.sources), "Need sources for proto_library")
@@ -183,7 +171,7 @@ template("proto_library") {
   if (defined(invoker.generate_python)) {
     generate_python = invoker.generate_python
   } else {
-    generate_python = true
+    generate_python = false
   }
 
   if (defined(invoker.generate_javascript)) {
@@ -400,9 +388,6 @@ template("proto_library") {
         "--cc-out-dir",
         rel_cc_out_dir,
       ]
-      if (enable_kythe_annotations) {
-        args += [ "--enable-kythe-annotation" ]
-      }
       if (defined(invoker.cc_generator_options)) {
         args += [
           "--cc-options",
@@ -575,12 +560,6 @@ template("proto_library") {
       if (defined(invoker.extra_configs)) {
         configs += invoker.extra_configs
       }
-
-      # Remove Sanitizer and coverage instrumentation for a performance boost when
-      # fuzzing, since the only fuzzers that use protobuf are libprotobuf-mutator
-      # based fuzzers, and they don't actually target protobuf code.
-      configs -= not_fuzzed_remove_configs
-      configs += [ "//build/config/sanitizers:not_fuzzed" ]
     }
 
     public_configs = [
