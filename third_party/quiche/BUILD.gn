@@ -302,6 +302,8 @@ static_library("quiche_tool_support") {
 
   deps = [
     ":quiche",
+    "//third_party/abseil-cpp:flags_parse",
+    "//third_party/abseil-cpp:flags_usage",
     "//third_party/googleurl:url",
     "//third_party/protobuf:protobuf_lite",
     "//third_party/quic_trace:quic_trace_proto",
