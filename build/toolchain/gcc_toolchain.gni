@@ -17,7 +17,6 @@ declare_args() {
   # Currently works only on some platforms and enabled by default for official
   # builds. Requires debug info.
   enable_resource_allowlist_generation =
-      is_official_build &&
       # Don't enable for Android-on-Chrome OS.
       (target_os == "android" || target_os == "win")
 
@@ -26,7 +25,8 @@ declare_args() {
   # without the sysroot so that updates to system header files trigger a
   # rebuild (when using the sysroot, the CR_SYSROOT_KEY define takes care of
   # this already).
-  system_headers_in_deps = !use_sysroot
+  system_headers_in_deps = true
+  #system_headers_in_deps = !use_sysroot
 }
 
 # When the arg is set via args.gn, it applies to all toolchains. In order to not
@@ -792,7 +792,6 @@ template("gcc_rust_host_build_tools_toolchain") {
       # build faster.
       is_debug = false
       is_component_build = false
-      is_official_build = false
       use_clang_coverage = false
       use_sanitizer_coverage = false
       use_thin_lto = false
@@ -873,7 +872,7 @@ template("gcc_toolchain") {
 # actually just be doing a native compile.
 template("clang_toolchain") {
   gcc_toolchain(target_name) {
-    _path = "$clang_base_path/bin"
+    _path = "./bin"
     _is_path_absolute = get_path_info(_path, "abspath") == _path
 
     # Preserve absolute paths for tools like distcc.
