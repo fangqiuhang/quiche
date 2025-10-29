@@ -5,10 +5,6 @@
 # Toolchain-related configuration that may be needed outside the context of the
 # toolchain() rules themselves.
 
-import("//build/config/cast.gni")
-import("//build/config/chrome_build.gni")
-import("//build_overrides/build.gni")
-
 declare_args() {
   # If this is set to true, we use the revision in the llvm repo to determine
   # the CLANG_REVISION to use, instead of the version hard-coded into
