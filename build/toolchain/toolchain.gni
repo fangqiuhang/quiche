@@ -27,6 +27,10 @@ declare_args() {
   # If false, the toolchain overrides `use_partition_alloc_as_malloc` in
   # PartitionAlloc, to allow use of the system allocator.
   toolchain_allows_use_partition_alloc_as_malloc = true
+
+  #
+  toolchain_has_rust = false
+  rust_compiler_prefix = ""
 }
 
 declare_args() {
@@ -35,6 +39,9 @@ declare_args() {
   } else {
     clang_version = "20"
   }
+  clang_compiler_prefix = ""
+
+  #use_clang_coverage = false
 }
 
 # Extension for shared library files (including leading dot).
