@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/features.gni")
 import("src/gen/sources.gni")
 
 # Config for us and everybody else depending on BoringSSL.
@@ -37,7 +38,7 @@ all_sources = bcm_internal_headers + bcm_sources + crypto_internal_headers +
               crypto_sources + ssl_internal_headers + ssl_sources + pki_sources
 all_headers = crypto_headers + ssl_headers + pki_headers + pki_internal_headers
 
-is_msan = false
+#is_msan = false
 
 if (is_msan) {
   # MSan instrumentation is incompatible with assembly optimizations.
