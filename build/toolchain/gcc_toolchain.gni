@@ -2,15 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-#import("//build/config/clang/clang.gni")
-#import("//build/config/compiler/compiler.gni")
-#import("//build/config/coverage/coverage.gni")
-#import("//build/config/rust.gni")
-#import("//build/config/sanitizers/sanitizers.gni")
-#import("//build/config/sysroot.gni")
-#import("//build/config/v8_target_cpu.gni")
-#import("//build/toolchain/cc_wrapper.gni")
-#import("//build/toolchain/rbe.gni")
 import("//build/toolchain/toolchain.gni")
 declare_args() {
   # Enables allowlist generation for IDR_ grit defines seen by the compiler.
@@ -18,7 +9,7 @@ declare_args() {
   # builds. Requires debug info.
   enable_resource_allowlist_generation =
       # Don't enable for Android-on-Chrome OS.
-      (target_os == "android" || target_os == "win")
+      target_os == "android" || target_os == "win"
 
   # Use -MD instead of -MMD for compiler commands. This is useful for tracking
   # the comprehensive set of dependencies.  It's also required when building
@@ -26,6 +17,7 @@ declare_args() {
   # rebuild (when using the sysroot, the CR_SYSROOT_KEY define takes care of
   # this already).
   system_headers_in_deps = true
+
   #system_headers_in_deps = !use_sysroot
 }
 
@@ -150,101 +142,10 @@ template("single_gcc_toolchain") {
       # ensure that it's always the same, regardless of the values that may be
       # set on those toolchains.
       host_toolchain = host_toolchain
-
-      if (!defined(invoker_toolchain_args.v8_current_cpu)) {
-        v8_current_cpu = invoker_toolchain_args.current_cpu
-      }
     }
 
-    # When the invoker has explicitly overridden use_remoteexec or
-    # cc_wrapper in the toolchain args, use those values, otherwise default
-    # to the global one.  This works because the only reasonable override
-    # that toolchains might supply for these values are to force-disable them.
-    if (defined(toolchain_args.use_reclient)) {
-      toolchain_uses_reclient = toolchain_args.use_reclient
-    } else {
-      toolchain_uses_reclient = use_reclient
-    }
-
-    if (defined(toolchain_args.cc_wrapper)) {
-      toolchain_cc_wrapper = toolchain_args.cc_wrapper
-    } else {
-      toolchain_cc_wrapper = cc_wrapper
-    }
-    assert(!(toolchain_cc_wrapper != "" && toolchain_uses_reclient),
-           "re-client and cc_wrapper can't be used together.")
-
-    # When the invoker has explicitly overridden cc_wrapper in the
-    # toolchain args, use those values, otherwise default to the global one.
-    # This works because the only reasonable override that toolchains might
-    # supply for these values are to force-disable them.
-    # But if needs_rewrapper_path_arg is set in a Chrome OS build, the
-    # toolchain wrapper will have picked up rewrapper via cmd-line arg. So
-    # need to prepend rewrapper in that case.
-    if (toolchain_uses_reclient &&
-        (!defined(invoker.needs_rewrapper_path_arg) ||
-         !invoker.needs_rewrapper_path_arg)) {
-      if (defined(toolchain_args.reclient_cc_cfg_file)) {
-        toolchain_reclient_cc_cfg_file = toolchain_args.reclient_cc_cfg_file
-      } else {
-        toolchain_reclient_cc_cfg_file = reclient_cc_cfg_file
-      }
-
-      # C/C++ (clang) rewrapper prefix to use when use_reclient is true.
-      compiler_prefix = "${reclient_bin_dir}/rewrapper -cfg=${toolchain_reclient_cc_cfg_file}${rbe_bug_326584510_missing_inputs} -exec_root=${rbe_exec_root} "
-    } else {
-      compiler_prefix = "${toolchain_cc_wrapper} "
-
-      # Prevent warning about unused variable since it is not read in the code
-      # paths when reclient is not needed.
-      not_needed(invoker, [ "needs_rewrapper_path_arg" ])
-    }
-
-    # A specific toolchain may wish to avoid coverage instrumentation, so we
-    # allow the global "use_clang_coverage" arg to be overridden.
-    if (defined(toolchain_args.use_clang_coverage)) {
-      toolchain_use_clang_coverage = toolchain_args.use_clang_coverage
-    } else {
-      toolchain_use_clang_coverage = use_clang_coverage
-    }
-
-    # For a coverage build, we use the wrapper script globally so that it can
-    # remove coverage cflags from files that should not have them.
-    if (toolchain_use_clang_coverage) {
-      # "coverage_instrumentation_input_file" is set in args.gn, but it can be
-      # overridden by a toolchain config.
-      if (defined(toolchain_args.coverage_instrumentation_input_file)) {
-        toolchain_coverage_instrumentation_input_file =
-            toolchain_args.coverage_instrumentation_input_file
-      } else {
-        toolchain_coverage_instrumentation_input_file =
-            coverage_instrumentation_input_file
-      }
-
-      _coverage_wrapper =
-          rebase_path("//build/toolchain/clang_code_coverage_wrapper.py",
-                      root_build_dir)
-
-      # The wrapper needs to know what OS we target because it uses that to
-      # select a list of files that should not be instrumented.
-      _coverage_wrapper = _coverage_wrapper + " --target-os=" +
-                          invoker_toolchain_args.current_os
-
-      # We want to instrument everything if there is no input file set.
-      # If there is a file we need to give it to the wrapper script so it can
-      # instrument only those files.
-      if (toolchain_coverage_instrumentation_input_file != "") {
-        _coverage_wrapper =
-            _coverage_wrapper + " --files-to-instrument=" +
-            rebase_path(toolchain_coverage_instrumentation_input_file,
-                        root_build_dir)
-      }
-      compiler_prefix =
-          "\"$python_path\" ${_coverage_wrapper} " + compiler_prefix
-    }
-
-    cc = compiler_prefix + invoker.cc
-    cxx = compiler_prefix + invoker.cxx
+    cc = clang_compiler_prefix + invoker.cc
+    cxx = clang_compiler_prefix + invoker.cxx
 
     # "asm" doesn't support any of toolchain_cc_wrapper and
     # toolchain_uses_reclient. The coverage flags are also nonsensical on
@@ -792,7 +693,8 @@ template("gcc_rust_host_build_tools_toolchain") {
       # build faster.
       is_debug = false
       is_component_build = false
-      use_clang_coverage = false
+
+      #use_clang_coverage = false
       use_sanitizer_coverage = false
       use_thin_lto = false
     }

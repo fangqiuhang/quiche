@@ -2,25 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//build/features.gni")
 import("//build/toolchain/gcc_toolchain.gni")
 
 clang_toolchain("clang") {
   toolchain_args = {
-
-  }
-}
-
-clang_toolchain("clang_arm") {
-  toolchain_args = {
-    current_cpu = "arm"
-    current_os = "linux"
-  }
-}
-
-clang_toolchain("clang_arm64") {
-  toolchain_args = {
-    current_cpu = "arm64"
-    current_os = "linux"
+    current_cpu = current_cpu
+    current_os = current_os
   }
 }
 

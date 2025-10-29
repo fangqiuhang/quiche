@@ -1,0 +1,29 @@
+# Copyright 2025 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# =============================================
+#   PLEASE DO NOT ADD MORE FLAGS TO THIS FILE
+# =============================================
+#
+# There is more advice on where to put build flags in the "Build flag" section
+# of //build/BUILDCONFIG.gn.
+
+declare_args() {
+  # libudev usage. This currently only affects the content layer.
+  use_udev = is_linux || is_chromeos
+
+  use_dbus = is_linux || is_chromeos
+
+  use_gio = is_linux && target_os != "android"
+
+  use_blink = !is_ios
+
+  is_msan = false
+}
+#
+# =============================================
+#   PLEASE DO NOT ADD MORE FLAGS TO THIS FILE
+# =============================================
+#
+# See comment at the top.
