@@ -17,6 +17,7 @@ Install dependencies:
 
 ```
 apt install generate-ninja ninja-build   # GN+Ninja
+apt install clang llvm                   # If build with "is_clang = true"
 ```
 
 Synchronize git submodules:
