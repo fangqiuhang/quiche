@@ -1371,7 +1371,6 @@ absl_source_set("hash") {
     ":container_fixed_array",
     ":functional_function_ref",
     ":hash_city",
-    ":hash_low_level_hash",
     ":meta_type_traits",
     ":numeric_bits",
     ":numeric_int128",
@@ -1455,26 +1454,6 @@ absl_source_set("hash_city") {
     ":base_config",
     ":base_core_headers",
     ":base_endian",
-  ]
-}
-
-absl_source_set("hash_low_level_hash") {
-  public = [ "src/absl/hash/internal/low_level_hash.h" ]
-  sources = [ "src/absl/hash/internal/low_level_hash.cc" ]
-  deps = [
-    ":base_config",
-    ":base_endian",
-    ":base_prefetch",
-    ":numeric_int128",
-  ]
-  visibility = [ ":*" ]
-}
-
-absl_test("hash_low_level_hash_test") {
-  sources = [ "src/absl/hash/internal/low_level_hash_test.cc" ]
-  deps = [
-    ":hash_low_level_hash",
-    ":strings",
   ]
 }
 
@@ -2331,7 +2310,6 @@ absl_source_set("random") {
     ":random_distributions",
     ":random_internal_nonsecure_base",
     ":random_internal_pcg_engine",
-    ":random_internal_pool_urbg",
     ":random_internal_randen_engine",
     ":random_seed_sequences",
   ]
@@ -2384,7 +2362,6 @@ absl_source_set("random_seed_sequences") {
   deps = [
     ":base_config",
     ":base_nullability",
-    ":random_internal_pool_urbg",
     ":random_internal_salted_seed_seq",
     ":random_internal_seed_material",
     ":random_seed_gen_exception",
@@ -2509,24 +2486,6 @@ absl_source_set("random_internal_seed_material") {
   visibility = [ ":*" ]
 }
 
-absl_source_set("random_internal_pool_urbg") {
-  public = [ "src/absl/random/internal/pool_urbg.h" ]
-  sources = [ "src/absl/random/internal/pool_urbg.cc" ]
-  deps = [
-    ":base",
-    ":base_config",
-    ":base_core_headers",
-    ":base_endian",
-    ":base_raw_logging_internal",
-    ":random_internal_randen",
-    ":random_internal_seed_material",
-    ":random_internal_traits",
-    ":random_seed_gen_exception",
-    ":types_span",
-  ]
-  visibility = [ ":*" ]
-}
-
 absl_source_set("random_internal_explicit_seed_seq") {
   testonly = true
   public = [ "src/absl/random/internal/explicit_seed_seq.h" ]
@@ -2599,7 +2558,6 @@ absl_source_set("random_internal_nonsecure_base") {
     ":base_core_headers",
     ":container_inlined_vector",
     ":meta_type_traits",
-    ":random_internal_pool_urbg",
     ":random_internal_salted_seed_seq",
     ":random_internal_seed_material",
     ":types_span",
@@ -3239,7 +3197,6 @@ absl_source_set("strings_cord") {
     "src/absl/strings/cord.cc",
     "src/absl/strings/cord_analysis.cc",
     "src/absl/strings/cord_analysis.h",
-    "src/absl/strings/cord_buffer.cc",
   ]
   public = [
     "src/absl/strings/cord.h",
@@ -3912,26 +3869,7 @@ absl_source_set("types_optional") {
     ":base_nullability",
     ":memory",
     ":meta_type_traits",
-    ":types_bad_optional_access",
     ":utility",
-  ]
-}
-
-absl_source_set("types_bad_optional_access") {
-  sources = [ "src/absl/types/bad_optional_access.cc" ]
-  public = [ "src/absl/types/bad_optional_access.h" ]
-  deps = [
-    ":base_config",
-    ":base_raw_logging_internal",
-  ]
-}
-
-absl_source_set("types_bad_variant_access") {
-  sources = [ "src/absl/types/bad_variant_access.cc" ]
-  public = [ "src/absl/types/bad_variant_access.h" ]
-  deps = [
-    ":base_config",
-    ":base_raw_logging_internal",
   ]
 }
 
@@ -3943,7 +3881,6 @@ absl_source_set("types_variant") {
     ":base_core_headers",
     ":base_internal",
     ":meta_type_traits",
-    ":types_bad_variant_access",
     ":utility",
   ]
 }
@@ -3990,16 +3927,6 @@ absl_source_set("utility") {
     ":base_internal",
     ":meta_type_traits",
   ]
-}
-
-absl_source_set("utility_if_constexpr") {
-  public = [ "src/absl/utility/internal/if_constexpr.h" ]
-  deps = [ ":base_config" ]
-}
-
-absl_test("utility_if_constexpr_test") {
-  sources = [ "src/absl/utility/internal/if_constexpr_test.cc" ]
-  deps = [ ":utility_if_constexpr" ]
 }
 
 # ==============================================================================
@@ -4665,7 +4592,6 @@ if (absl_build_tests) {
         ":functional_function_ref_test",
         ":functional_overload_test",
         ":hash_instantiated_test",
-        ":hash_low_level_hash_test",
         ":hash_test",
         ":log_absl_check_test",
         ":log_absl_log_basic_test",
@@ -4732,7 +4658,6 @@ if (absl_build_tests) {
         ":types_optional_test",
         ":types_span_test",
         ":types_variant_test",
-        ":utility_if_constexpr_test",
         "//third_party/googletest:gtest_main",
       ]
     }
