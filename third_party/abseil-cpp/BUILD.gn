@@ -2362,6 +2362,7 @@ absl_source_set("random_seed_sequences") {
   deps = [
     ":base_config",
     ":base_nullability",
+    ":random_internal_entropy_pool",
     ":random_internal_salted_seed_seq",
     ":random_internal_seed_material",
     ":random_seed_gen_exception",
@@ -2503,6 +2504,21 @@ absl_source_set("random_internal_sequence_urbg") {
   visibility = [ ":*" ]
 }
 
+absl_source_set("random_internal_entropy_pool") {
+  public = [ "src/absl/random/internal/entropy_pool.h" ]
+  sources = [ "src/absl/random/internal/entropy_pool.cc" ]
+  deps = [
+    ":base",
+    ":base_config",
+    ":base_core_headers",
+    ":random_internal_platform",
+    ":random_internal_randen",
+    ":random_internal_seed_material",
+    ":random_seed_gen_exception",
+  ]
+  visibility = [ ":*" ]
+}
+
 absl_source_set("random_internal_salted_seed_seq") {
   public = [ "src/absl/random/internal/salted_seed_seq.h" ]
   deps = [
@@ -2558,6 +2574,7 @@ absl_source_set("random_internal_nonsecure_base") {
     ":base_core_headers",
     ":container_inlined_vector",
     ":meta_type_traits",
+    ":random_internal_entropy_pool",
     ":random_internal_salted_seed_seq",
     ":random_internal_seed_material",
     ":types_span",
