@@ -33,7 +33,7 @@ ninja -C out epoll_quic_client
 
 Finally run the simple QUIC client:
 ```
-./out/epoll_quic_client https://www.iqiyi.com/ --quic_version=RFCv1 --disable_certificate_verification
+./out/epoll_quic_client https://www.google.com/ --quic_version=RFCv1 --disable_certificate_verification
 ```
 
 # Reference
