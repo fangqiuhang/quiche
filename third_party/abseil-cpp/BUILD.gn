@@ -1152,11 +1152,13 @@ absl_source_set("debugging_failure_signal_handler") {
 absl_source_set("debugging_internal") {
   sources = [
     "src/absl/debugging/internal/address_is_readable.cc",
+    "src/absl/debugging/internal/borrowed_fixup_buffer.cc",
     "src/absl/debugging/internal/elf_mem_image.cc",
     "src/absl/debugging/internal/vdso_support.cc",
   ]
   public = [
     "src/absl/debugging/internal/address_is_readable.h",
+    "src/absl/debugging/internal/borrowed_fixup_buffer.h",
     "src/absl/debugging/internal/elf_mem_image.h",
     "src/absl/debugging/internal/vdso_support.h",
   ]
