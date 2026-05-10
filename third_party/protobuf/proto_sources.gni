@@ -535,11 +535,15 @@ protobuf_compiler_php_headers = [
   "$_include_dir/compiler/php/names.h",
 ]
 
-protobuf_compiler_ruby_sources =
-    [ "$_include_dir/compiler/ruby/ruby_generator.cc" ]
+protobuf_compiler_ruby_sources = [
+  "$_include_dir/compiler/ruby/rbs_generator.cc",
+  "$_include_dir/compiler/ruby/ruby_generator.cc",
+]
 
-protobuf_compiler_ruby_headers =
-    [ "$_include_dir/compiler/ruby/ruby_generator.h" ]
+protobuf_compiler_ruby_headers = [
+  "$_include_dir/compiler/ruby/rbs_generator.h",
+  "$_include_dir/compiler/ruby/ruby_generator.h",
+]
 
 protobuf_compiler_rust_sources = [
   "$_include_dir/compiler/rust/accessors/accessor_case.cc",
@@ -556,6 +560,7 @@ protobuf_compiler_rust_sources = [
   "$_include_dir/compiler/rust/context.cc",
   "$_include_dir/compiler/rust/crate_mapping.cc",
   "$_include_dir/compiler/rust/enum.cc",
+  "$_include_dir/compiler/rust/extension.cc",
   "$_include_dir/compiler/rust/generator.cc",
   "$_include_dir/compiler/rust/message.cc",
   "$_include_dir/compiler/rust/naming.cc",
@@ -571,6 +576,7 @@ protobuf_compiler_rust_headers = [
   "$_include_dir/compiler/rust/context.h",
   "$_include_dir/compiler/rust/crate_mapping.h",
   "$_include_dir/compiler/rust/enum.h",
+  "$_include_dir/compiler/rust/extension.h",
   "$_include_dir/compiler/rust/message.h",
   "$_include_dir/compiler/rust/naming.h",
   "$_include_dir/compiler/rust/rust_keywords.h",
