@@ -34,6 +34,13 @@ config("quiche_internal_config") {
   if (is_clang) {
     cflags += [ "-Wno-sign-compare" ]
   }
+  if (is_apple) {
+    cflags += [ "-Wno-nullability-completeness" ]
+    ldflags = [
+      "-framework",
+      "CoreFoundation",
+    ]
+  }
 }
 
 config("quiche_config") {
@@ -121,20 +128,13 @@ proto_library("net_quic_proto") {
 }
 
 proto_library("net_quic_test_tools_proto") {
-  #visibility = [ "//net:net_public_deps" ]
+  visibility = [ ":qpack_offline_decoder" ]
 
   sources = [ "src/quiche/quic/test_tools/send_algorithm_test_result.proto" ]
-  cc_generator_options = "dllexport_decl=COMPONENT_EXPORT(QUICHE):"
 
-  #cc_include = "net/base/net_export.h"
+  cc_generator_options = "dllexport_decl=COMPONENT_EXPORT(QUICHE):"
   cc_include = "third_party/googleurl/src/polyfills/base/component_export.h"
   component_build_force_source_set = true
-
-  #link_deps = [ "//net:net_export_header" ]
-
-  defines = [ "NET_IMPLEMENTATION" ]
-
-  #extra_configs = [ "//build/config/compiler:wexit_time_destructors" ]
 }
 
 if (build_epoll_based_tools) {
@@ -296,11 +296,12 @@ static_library("quiche_test_support") {
   # absl::HexStringToBytes have been removed.
   cflags = [ "-Wno-deprecated-declarations" ]
   sources = [
-              "src/quiche/common/platform/default//quiche_platform_impl/quiche_test_output_impl.h",
+              "src/quiche/common/platform/default/quiche_platform_impl/quiche_expect_bug_impl.h",
               "src/quiche/common/platform/default/quiche_platform_impl/quiche_test_impl.cc",
               "src/quiche/common/platform/default/quiche_platform_impl/quiche_test_impl.h",
               "src/quiche/common/platform/default/quiche_platform_impl/quiche_test_loopback_impl.cc",
               "src/quiche/common/platform/default/quiche_platform_impl/quiche_test_loopback_impl.h",
+              "src/quiche/common/platform/default/quiche_platform_impl/quiche_test_output_impl.h",
             ] + quiche_test_support_srcs + quiche_test_support_hdrs
 
   configs += [ ":quiche_internal_config" ]
@@ -387,10 +388,10 @@ if (!is_ios) {
     public_configs = [ ":quiche_config" ]
 
     deps = [
+      ":quiche",
+      ":quiche_tool_support",
       "//third_party/boringssl",
       "//third_party/protobuf:protobuf_lite",
-      "//third_party/quiche:quiche",
-      "//third_party/quiche:quiche_tool_support",
     ]
   }
 
@@ -406,9 +407,10 @@ if (!is_ios) {
     public_configs = [ ":quiche_config" ]
 
     deps = [
+      ":quiche",
+      ":quiche_tool_support",
       "//third_party/boringssl",
       "//third_party/protobuf:protobuf_lite",
-      "//third_party/quiche:quiche_tool_support",
     ]
   }
 
@@ -420,9 +422,9 @@ if (!is_ios) {
     public_configs = [ ":quiche_config" ]
 
     deps = [
+      ":quiche_tool_support",
       "//third_party/boringssl",
       "//third_party/protobuf:protobuf_lite",
-      "//third_party/quiche:quiche_tool_support",
     ]
   }
 
@@ -436,11 +438,11 @@ if (!is_ios) {
     deps = [
       ":net_quic_test_tools_proto",
       ":quiche_test_support",
+      ":quiche_tool_support",
       "//third_party/abseil-cpp:absl",
       "//third_party/boringssl",
       "//third_party/googletest:gmock",
       "//third_party/googletest:gtest",
-      "//third_party/quiche:quiche_tool_support",
     ]
   }
 }
