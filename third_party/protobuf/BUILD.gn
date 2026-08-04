@@ -243,6 +243,13 @@ if (current_toolchain == host_toolchain) {
 
     configs += [ ":protobuf_config_internal" ]
 
+    if (is_apple) {
+      ldflags = [
+        "-framework",
+        "CoreFoundation",
+      ]
+    }
+
     deps = [
       ":protoc_cpp",
       ":protoc_java",
