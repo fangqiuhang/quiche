@@ -6,6 +6,9 @@
 
 config("re2_config") {
   include_dirs = [ "src" ]
+  if (is_apple) {
+    cflags = [ "-Wno-deprecated-declarations" ]
+  }
 }
 
 static_library("re2") {
