@@ -31,10 +31,18 @@ config("protobuf_config") {
 config("protobuf_config_internal") {
   include_dirs = [ "./src/third_party/utf8_range" ]
 
+  cflags = []
   if (is_clang) {
-    cflags = [
+    cflags += [
       # For src/google/protobuf/map.cc:
       "-Wno-deprecated-this-capture",
+    ]
+  }
+  if (is_apple) {
+    cflags += [ "-Wno-deprecated-declarations" ]
+    ldflags = [
+      "-framework",
+      "CoreFoundation",
     ]
   }
 }
@@ -242,13 +250,6 @@ if (current_toolchain == host_toolchain) {
     sources = [ "src/src/google/protobuf/compiler/main.cc" ]
 
     configs += [ ":protobuf_config_internal" ]
-
-    if (is_apple) {
-      ldflags = [
-        "-framework",
-        "CoreFoundation",
-      ]
-    }
 
     deps = [
       ":protoc_cpp",
