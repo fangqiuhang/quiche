@@ -361,13 +361,6 @@ if (!is_ios) {
     configs += [ ":quiche_internal_config" ]
     public_configs = [ ":quiche_config" ]
 
-    if (is_apple) {
-      ldflags = [
-        "-framework",
-        "CoreFoundation",
-      ]
-    }
-
     deps = [
       ":quiche",
       ":quiche_tool_support",
@@ -387,13 +380,6 @@ if (!is_ios) {
     configs += [ ":quiche_internal_config" ]
     public_configs = [ ":quiche_config" ]
 
-    if (is_apple) {
-      ldflags = [
-        "-framework",
-        "CoreFoundation",
-      ]
-    }
-
     deps = [
       ":quiche",
       ":quiche_tool_support",
@@ -409,13 +395,6 @@ if (!is_ios) {
     configs += [ ":quiche_internal_config" ]
     public_configs = [ ":quiche_config" ]
 
-    if (is_apple) {
-      ldflags = [
-        "-framework",
-        "CoreFoundation",
-      ]
-    }
-
     deps = [
       ":quiche",
       ":quiche_tool_support",
@@ -429,13 +408,6 @@ if (!is_ios) {
 
     configs += [ ":quiche_internal_config" ]
     public_configs = [ ":quiche_config" ]
-
-    if (is_apple) {
-      ldflags = [
-        "-framework",
-        "CoreFoundation",
-      ]
-    }
 
     sources = [ "src/quiche/quic/tools/qpack_offline_decoder_bin.cc" ]
     deps = [
