@@ -3832,27 +3832,8 @@ absl_source_set("types_any") {
     ":base_core_headers",
     ":base_fast_type_id",
     ":meta_type_traits",
-    ":types_bad_any_cast",
     ":utility",
   ]
-}
-
-absl_source_set("types_bad_any_cast") {
-  public = [ "src/absl/types/bad_any_cast.h" ]
-  deps = [
-    ":base_config",
-    ":types_bad_any_cast_impl",
-  ]
-}
-
-absl_source_set("types_bad_any_cast_impl") {
-  sources = [ "src/absl/types/bad_any_cast.cc" ]
-  public = [ "src/absl/types/bad_any_cast.h" ]
-  deps = [
-    ":base_config",
-    ":base_raw_logging_internal",
-  ]
-  visibility = [ ":*" ]
 }
 
 absl_source_set("types_span") {
@@ -4533,6 +4514,9 @@ config("absl_default_cflags_cc") {
       "-Wstring-conversion",
     ]
     #cflags_cc += [ "-Wbitfield-enum-conversion" ]
+  }
+  if (is_apple) {
+    cflags_cc += [ "-Wno-deprecated-declarations" ]
   }
 }
 
