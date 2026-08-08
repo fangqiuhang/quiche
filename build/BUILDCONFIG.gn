@@ -63,6 +63,8 @@ declare_args() {
   #is_component_build =
   #    is_debug && current_os != "ios" && current_os != "watchos"
   is_component_build = false
+
+  arm_use_neon = true
 }
 
 # ==============================================================================
