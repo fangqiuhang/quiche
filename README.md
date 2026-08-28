@@ -36,6 +36,21 @@ Finally run the simple QUIC client:
 ./out/epoll_quic_client https://www.iqiyi.com/ --quic_version=RFCv1 --disable_certificate_verification
 ```
 
+## Mac
+
+Install Xcode and Xcode CommandLine Tools, then you will get `gcc` or `clang`.
+
+On M sillicon, if `gn` is little late, the `current_cpu` could be detected as
+`x64`, causing mistake. Should specify it by `gn gen out/mac --args="current_cpu = \'arm64\'"`.
+
+## Android(Termux)
+
+Build in Termux. Firstly install Termux app in Android devices, then install
+dependencies:
+```
+pkg install git clang gcc
+```
+
 # Reference
 
 - Chromium (https://chromium.googlesource.com/chromium/src/)
