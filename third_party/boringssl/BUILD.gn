@@ -25,6 +25,12 @@ config("component_config") {
 config("internal_config") {
   visibility = [ ":*" ]
   defines = [ "OPENSSL_SMALL" ]
+  if (is_win) {
+    defines += [
+      "WIN32_LEAN_AND_MEAN",
+      "NOCRYPT",
+    ]
+  }
 }
 
 config("no_asm_config") {
@@ -52,16 +58,18 @@ if (is_msan) {
     visibility = [ ":*" ]
     testonly = true
   }
-} else if (is_win && (current_cpu == "x86" || current_cpu == "x64")) {
-  # Windows' x86 and x86_64 assembly is built with NASM.
-  import("//third_party/nasm/nasm_assemble.gni")
-  nasm_assemble("boringssl_asm") {
+} else if (is_win) {
+  # No NASM assembler is wired up on Windows in this build: the MSVC toolchain
+  # forces is_clang=false, and the VS clang shim is driven through the gcc
+  # toolchain whose `asm` step just reuses the C compiler (no NASM). Fall back
+  # to no assembly optimizations, matching the existing GCC/MinGW path.
+  source_set("boringssl_asm") {
     visibility = [ ":*" ]
-    sources = rebase_path(bcm_sources_nasm + crypto_sources_nasm, ".", "src")
+    public_configs = [ ":no_asm_config" ]
   }
-  nasm_assemble("test_support_asm") {
+  source_set("test_support_asm") {
     visibility = [ ":*" ]
-    sources = rebase_path(test_support_sources_nasm, ".", "src")
+    testonly = true
   }
 } else {
   # All other targets use GAS-compatible assembler. BoringSSL's assembly files
