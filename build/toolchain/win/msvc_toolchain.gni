@@ -1,0 +1,138 @@
+# Copyright 2024 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+#
+# MSVC toolchain template for GN builds.
+# Simplified from Chromium's build/toolchain/win/toolchain.gni.
+
+import("//build/toolchain/toolchain.gni")
+import("//build/win/visual_studio_version.gni")
+
+assert(is_win, "MSVC toolchain is only available on Windows")
+
+# Auto-detect or use specified VS installation.
+_toolchain_data = exec_script("//build/toolchain/win/setup_msvc_toolchain.py",
+                              [
+                                visual_studio_path,
+                                target_cpu,
+                              ],
+                              "scope")
+
+# Template for a single MSVC toolchain.
+#
+# Parameters:
+#   toolchain_args: scope with at least current_cpu and current_os set.
+template("msvc_toolchain") {
+  toolchain(target_name) {
+    assert(defined(invoker.toolchain_args))
+    toolchain_args = {
+      forward_variables_from(invoker.toolchain_args, "*")
+      host_toolchain = host_toolchain
+    }
+
+    # Object file subdirectory. Use source_out_dir to include the source
+    # file's directory, preventing collisions from files with the same name
+    # in different directories (e.g., protobuf's message.cc).
+    object_subdir = "{{source_out_dir}}"
+
+    # Path to cl.exe, lib.exe, link.exe.
+    _vc_bin = _toolchain_data.vc_bin_dir
+    _cl = "${_vc_bin}\\cl.exe"
+    _lib = "${_vc_bin}\\lib.exe"
+    _link = "${_vc_bin}\\link.exe"
+
+    # Include and lib flags from VS environment.
+    _sys_include_flags = "${_toolchain_data.include_flags} "
+    _sys_lib_flags = "${_toolchain_data.libpath_flags} "
+
+    # Machine type for the linker.
+    if (toolchain_args.current_cpu == "x64") {
+      _sys_lib_flags += "/MACHINE:X64 "
+    } else if (toolchain_args.current_cpu == "x86") {
+      _sys_lib_flags += "/MACHINE:X86 "
+    }
+
+    tool("cc") {
+      precompiled_header_type = "msvc"
+      depsformat = "msvc"
+      description = "CC {{output}}"
+      outputs = [ "$object_subdir/{{source_name_part}}.obj" ]
+      command = "$_cl /nologo /showIncludes $_sys_include_flags{{defines}} {{include_dirs}} {{cflags}} {{cflags_c}} /c {{source}} /Fo{{output}}"
+    }
+
+    tool("cxx") {
+      precompiled_header_type = "msvc"
+      depsformat = "msvc"
+      description = "CXX {{output}}"
+      outputs = [ "$object_subdir/{{source_name_part}}.obj" ]
+      command = "$_cl /nologo /showIncludes $_sys_include_flags{{defines}} {{include_dirs}} {{cflags}} /TP {{cflags_cc}} /c {{source}} /Fo{{output}}"
+    }
+
+    tool("alink") {
+      rspfile = "{{output}}.rsp"
+      command = "$_lib \"/OUT:{{output}}\" /nologo {{arflags}} \"@$rspfile\""
+      description = "LIB {{output}}"
+      outputs = [ "{{output_dir}}/{{target_output_name}}{{output_extension}}" ]
+      default_output_extension = ".lib"
+      default_output_dir = "{{target_out_dir}}"
+      rspfile_content = "{{inputs}}"
+    }
+
+    tool("solink") {
+      dllname = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+      libname = "${dllname}.lib"
+      pdbname = "${dllname}.pdb"
+      rspfile = "${dllname}.rsp"
+
+      command = "$_link \"/OUT:$dllname\" /nologo $_sys_lib_flags \"/IMPLIB:$libname\" /DLL \"/PDB:$pdbname\" \"@$rspfile\""
+
+      default_output_extension = ".dll"
+      default_output_dir = "{{root_out_dir}}"
+      description = "LINK(DLL) {{output}}"
+      outputs = [
+        dllname,
+        libname,
+        pdbname,
+      ]
+      link_output = libname
+      depend_output = libname
+      runtime_outputs = [
+        dllname,
+        pdbname,
+      ]
+      restat = true
+      rspfile_content = "{{libs}} {{solibs}} {{inputs}} {{ldflags}}"
+    }
+
+    tool("link") {
+      exename = "{{output_dir}}/{{target_output_name}}{{output_extension}}"
+      pdbname = "$exename.pdb"
+      rspfile = "$exename.rsp"
+
+      command = "$_link \"/OUT:$exename\" /nologo $_sys_lib_flags \"/PDB:$pdbname\" \"@$rspfile\""
+
+      default_output_extension = ".exe"
+      default_output_dir = "{{root_out_dir}}"
+      description = "LINK {{output}}"
+      outputs = [
+        exename,
+        pdbname,
+      ]
+      runtime_outputs = [
+        exename,
+        pdbname,
+      ]
+      rspfile_content = "{{inputs}} {{libs}} {{ldflags}}"
+    }
+
+    # These are generic but must be defined in each toolchain.
+    tool("stamp") {
+      command = stamp_command
+      description = stamp_description
+    }
+    tool("copy") {
+      command = copy_command
+      description = copy_description
+    }
+  }
+}

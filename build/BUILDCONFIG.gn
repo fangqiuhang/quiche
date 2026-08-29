@@ -37,6 +37,10 @@ declare_args() {
               current_cpu != "mips" && current_cpu != "mips64" &&
               current_cpu != "riscv64")
 
+  # Set to true to use MSVC (Visual Studio) toolchain on Windows.
+  # When enabled, overrides is_clang to false on Windows.
+  build_win_over_msvc = false
+
   # Allows the path to a custom target toolchain to be injected as a single
   # argument, and set as the default toolchain.
   custom_toolchain = ""
@@ -73,7 +77,7 @@ declare_args() {
 
 cflags = []
 cflags_c = []
-cflags_cc = [ "-std=c++20" ]
+cflags_cc = []
 
 # All binary targets will get this list of configs by default.
 _shared_binary_target_configs = [ "//build:compiler_defaults" ]
@@ -95,13 +99,17 @@ set_defaults("source_set") {
   configs = _shared_binary_target_configs
 }
 
-# TODO: support Windows, macOS, etc.
 host_toolchain = "//build/toolchain:gcc"
+if (build_win_over_msvc && current_os == "win") {
+  host_toolchain = "//build/toolchain/win:msvc"
+}
 
 # If a custom toolchain has been set in the args, set it as default. Otherwise,
 # set the default toolchain for the platform (if any).
 if (custom_toolchain != "") {
   set_default_toolchain(custom_toolchain)
+} else if (build_win_over_msvc && current_os == "win") {
+  set_default_toolchain("//build/toolchain/win:msvc")
 } else {
   set_default_toolchain("//build/toolchain:gcc")
 }
@@ -118,6 +126,11 @@ is_linux = current_os == "linux"
 is_mac = current_os == "mac"
 is_watchos = current_os == "watchos"
 is_win = current_os == "win" || current_os == "winuwp"
+
+# MSVC overrides is_clang on Windows.
+if (build_win_over_msvc && current_os == "win") {
+  is_clang = false
+}
 
 is_apple = is_ios || is_mac || is_watchos
 is_posix = !is_win && !is_fuchsia

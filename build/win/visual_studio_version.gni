@@ -1,0 +1,9 @@
+# Copyright 2024 The Chromium Authors
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+declare_args() {
+  # Path to Visual Studio installation. If empty, auto-detect using vswhere.exe.
+  # Example: "C:\Program Files\Microsoft Visual Studio\18\Community"
+  visual_studio_path = ""
+}

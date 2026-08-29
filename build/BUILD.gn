@@ -13,13 +13,31 @@ config("compiler_defaults") {
     ]
   }
 
-  # MinGW has incompatibilities that MSVC doesn't:
-  # - windows.h unconditionally includes wingdi.h (#define ERROR 0)
-  # - _WIN32 is defined but WIN32 is not (some code uses #ifdef WIN32)
-  if (build_win_over_mingw) {
-    defines = [
-      "QUICHE_MINGW",
+  if (!is_debug) {
+    defines = [ "NDEBUG" ]
+  }
+
+  if (build_win_over_msvc && is_win) {
+    # MSVC-specific compiler flags.
+    cflags += [
+      "/bigobj",  # Some files exceed default section limits.
+      "/Gy",  # Enable function-level locking.
+      "/FS",  # Force synchronous PDB writes for parallel builds.
+      "/utf-8",  # Assume UTF-8 source encoding.
+      "/EHsc",  # Enable C++ exception handling.
+      "/Zc:preprocessor",  # Enable standards-conformant preprocessor (for
+                           # __VA_OPT__).
+    ]
+    cflags_cc = [
+      "/std:c++20",  # C++20 standard.
+    ]
+    defines += [
+      "NOMINMAX",  # Prevent windows.h from defining min/max macros.
+      "_CRT_SECURE_NO_WARNINGS",  # Suppress CRT deprecation warnings.
       "WIN32",
+      "QUICHE_MSVC",  # Indicate MSVC compiler for quiche logging workarounds.
+      "_WIN32_WINNT=0x0A00",  # Target Windows 10+.
+      "NTDDI_VERSION=0x0A00000B",  # Windows 10 22H2.
     ]
 
     # Overrides directory for quiche logging (ERROR macro workaround).
@@ -83,7 +101,7 @@ config("compiler_defaults") {
 }
 
 config("executable_ldconfig") {
-  if (!is_mac) {
+  if (!is_mac && !build_win_over_msvc) {
     ldflags = [
       "-Wl,-rpath=\$ORIGIN/",
       "-Wl,-rpath-link=",
