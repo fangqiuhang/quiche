@@ -31,15 +31,29 @@ config("protobuf_config") {
 config("protobuf_config_internal") {
   include_dirs = [ "./src/third_party/utf8_range" ]
 
-  cflags = []
   if (is_clang) {
     cflags += [
       # For src/google/protobuf/map.cc:
       "-Wno-deprecated-this-capture",
     ]
   }
-  if (is_apple) {
+  if (build_win_over_msvc) {
+    cflags += [
+      "/wd4047",  # Suppress C4047: differing levels of indirection
+                  # (uintptr_t vs void* pointer casts in upb/mem/arena.c).
+      "/wd4244",  # Suppress C4244: narrowing conversion in protobuf code.
+      "/wd4267",  # Suppress C4267: conversion from size_t, possible loss of
+                  # data.
+      "/wd4305",  # Suppress C4305: truncation from int to bool
+                  # (in generated_message_tctable_lite.cc).
+      "/wd4624",  # Suppress C4624: destructor implicitly defined as deleted.
+      "/wd4715",  # Suppress C4715: not all control paths return a value
+                  # (lambda in generated_message_tctable_lite.cc).
+    ]
+  } else {
     cflags += [ "-Wno-deprecated-declarations" ]
+  }
+  if (is_apple) {
     ldflags = [
       "-framework",
       "CoreFoundation",
