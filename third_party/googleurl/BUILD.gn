@@ -10,7 +10,16 @@ if (is_android) {
 
 config("googleurl_config") {
   include_dirs = [ "src" ]
-  cflags_cc += [ "-Wno-return-type" ]
+  if (build_win_over_msvc) {
+    # Force-include header that patches compiler_specific.h and provides
+    # MSVC-compatible __builtin_*_overflow for safe_math_clang_gcc_impl.h.
+    cflags += [
+      "/FIthird_party/googleurl/overrides/msvc_compiler_specific_fix.h",
+      "/wd4244",  # Suppress C4244: narrowing conversion in googleurl code.
+    ]
+  } else {
+    cflags_cc += [ "-Wno-return-type" ]
+  }
 }
 
 source_set("buildflag_header_h") {
@@ -61,6 +70,7 @@ source_set("url") {
 
   include_dirs = [
     "src/polyfills/",
+    "overrides/",
     "src/",
   ]
 }
