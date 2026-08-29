@@ -17,7 +17,9 @@ config("zlib_config") {
   if (zlib_symbols_visible) {
     defines = [ "ZLIB_DLL" ]
   }
-  cflags_c = [ "-Wno-implicit-function-declaration" ]
+  if (!build_win_over_msvc) {
+    cflags_c = [ "-Wno-implicit-function-declaration" ]
+  }
 }
 
 config("zlib_internal_config") {
@@ -32,15 +34,22 @@ config("zlib_internal_config") {
     defines += [ "ZLIB_DEBUG" ]
   }
 
-  if (is_win && !is_clang) {
-    # V8 supports building with msvc, these silence some warnings that
-    # causes compilation to fail (https://crbug.com/1255096).
-    cflags = [
-      "/wd4244",
-      "/wd4100",
-      "/wd4702",
-      "/wd4127",
-    ]
+  if (is_win) {
+    if (build_win_over_msvc) {
+      # V8 supports building with msvc, these silence some warnings that
+      # causes compilation to fail (https://crbug.com/1255096).
+      cflags = [
+        "/wd4244",
+        "/wd4100",
+        "/wd4702",
+        "/wd4127",
+      ]
+    }
+
+    # X86_WINDOWS is needed by cpu_features.c for CPU detection on Windows x86/x64.
+    if (current_cpu == "x86" || current_cpu == "x64") {
+      defines += [ "X86_WINDOWS" ]
+    }
   }
 }
 
