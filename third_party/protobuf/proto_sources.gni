@@ -429,7 +429,7 @@ javaproto_sources = [
   "$_java_dir/Writer.java",
 ]
 
-_python_dir = "python/google/protobuf"
+_python_dir = "src/python/google/protobuf"
 pyproto_sources = [
   "$_python_dir/__init__.py",
   "$_python_dir/any.py",

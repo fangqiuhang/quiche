@@ -48,7 +48,7 @@ config("protobuf_config_internal") {
 }
 
 proto_library("struct_proto") {
-  sources = [ "src/google/protobuf/struct.proto" ]
+  sources = [ "src/src/google/protobuf/struct.proto" ]
 }
 
 if (is_component_build) {
@@ -74,10 +74,6 @@ static_library("protobuf_lite") {
   if (!is_debug && is_android) {
     configs -= [ "//build/config/compiler:default_optimization" ]
     configs += [ "//build/config/compiler:optimize_max" ]
-  }
-
-  if (is_win) {
-    configs -= [ "//build/config/win:lean_and_mean" ]
   }
 
   public_configs = [ ":protobuf_config" ]
