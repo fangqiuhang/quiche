@@ -1131,6 +1131,9 @@ absl_source_set("debugging_symbolize") {
   # TODO(mbonadei): The bazel file has:
   #   -DEFAULTLIB:dbghelp.lib
   # evaluate if this needs to be added here as well.
+  if (is_win) {
+    libs = [ "dbghelp" ]
+  }
 }
 
 absl_source_set("debugging_examine_stack") {
@@ -2482,7 +2485,7 @@ absl_source_set("random_internal_seed_material") {
   sources = [ "src/absl/random/internal/seed_material.cc" ]
   if (is_win) {
     # TODO(mbonadei): In the bazel file this is -DEFAULTLIB:bcrypt.lib.
-    libs = [ "bcrypt.lib" ]
+    libs = [ "bcrypt" ]
   }
   deps = [
     ":base_core_headers",
@@ -3812,6 +3815,9 @@ absl_source_set("time_internal_cctz_time_zone") {
     "src/absl/time/internal/cctz/include/cctz/zone_info_source.h",
   ]
   defines = []
+  if (is_win) {
+    sources += [ "src/absl/time/internal/cctz/src/time_zone_name_win.cc" ]
+  }
   if (is_apple) {
     # Work-around for https://github.com/llvm/llvm-project/issues/117630
     defines += [ "_XOPEN_SOURCE=700" ]
@@ -4488,14 +4494,6 @@ config("absl_include_config") {
 
 config("absl_define_config") {
   defines = [ "ABSL_ALLOCATOR_NOTHROW=1" ]
-
-  if (is_win && !use_custom_libcxx) {
-    defines += [
-      # See crbug.com/1101367: Acknowledge extended alignment when using
-      # MSVC's standard library.
-      "_ENABLE_EXTENDED_ALIGNED_STORAGE",
-    ]
-  }
 }
 
 config("absl_default_cflags_cc") {
