@@ -86,7 +86,7 @@ static_library("quiche") {
             ] + quiche_core_hdrs + quiche_core_srcs + binary_http_srcs +
             binary_http_hdrs + oblivious_http_srcs + oblivious_http_hdrs
 
-  if (is_linux) {
+  if (!is_ios) {
     sources += [
       "src/quiche/common/platform/default/quiche_platform_impl/quiche_bug_tracker_impl.h",
       "src/quiche/common/platform/default/quiche_platform_impl/quiche_client_stats_impl.h",
@@ -128,6 +128,7 @@ static_library("quiche") {
 proto_library("net_quic_proto") {
   visibility = [
     ":masque_support",
+    ":quic_server_factory",
     ":quiche",
   ]
 
@@ -158,27 +159,6 @@ proto_library("net_quic_test_tools_proto") {
 }
 
 if (build_epoll_based_tools) {
-  static_library("epoll_tool_support") {
-    # TODO(crbug.com/325102878): Remove once usage of the deprecated version of
-    # absl::HexStringToBytes have been removed.
-    cflags = [ "-Wno-deprecated-declarations" ]
-    testonly = true
-    sources = [
-                "src/quiche/common/platform/default/quiche_platform_impl/quiche_stream_buffer_allocator_impl.h",
-                "src/quiche/common/platform/default/quiche_platform_impl/quiche_udp_socket_platform_impl.h",
-              ] + io_tool_support_srcs + io_tool_support_hdrs
-
-    configs += [ ":quiche_internal_config" ]
-    public_configs = [ ":quiche_config" ]
-
-    deps = [
-      ":quiche",
-      ":quiche_tool_support",
-      "//third_party/abseil-cpp:absl",
-      "//third_party/boringssl",
-    ]
-  }
-
   executable("epoll_quic_client") {
     testonly = true
     sources = [
@@ -202,11 +182,7 @@ if (build_epoll_based_tools) {
 
   executable("epoll_quic_server") {
     testonly = true
-    sources = [
-      "src/quiche/quic/tools/quic_server_bin.cc",
-      "src/quiche/quic/tools/quic_server_factory.cc",
-      "src/quiche/quic/tools/quic_server_factory.h",
-    ]
+    sources = [ "src/quiche/quic/tools/quic_server_bin.cc" ]
 
     configs += [ ":quiche_internal_config" ]
     public_configs = [ ":quiche_config" ]
@@ -214,6 +190,7 @@ if (build_epoll_based_tools) {
     deps = [
       ":epoll_tool_support",
       ":quic_server_core",
+      ":quic_server_factory",
       ":quiche",
       ":quiche_tool_support",
       "//third_party/abseil-cpp:absl",
@@ -236,61 +213,6 @@ if (build_epoll_based_tools) {
       ":quiche_tool_support",
       "//third_party/abseil-cpp:absl",
       "//third_party/boringssl",
-    ]
-  }
-
-  executable("masque_client") {
-    testonly = true
-
-    # TODO(crbug.com/325102878): Remove once usage of the deprecated version of
-    # absl::HexStringToBytes have been removed.
-    cflags = [ "-Wno-deprecated-declarations" ]
-    sources = [ "src/quiche/quic/masque/masque_client_bin.cc" ]
-
-    configs += [ ":quiche_internal_config" ]
-    public_configs = [ ":quiche_config" ]
-
-    deps = [
-      ":epoll_tool_support",
-      ":masque_support",
-      ":quiche",
-      ":quiche_tool_support",
-      "//third_party/boringssl",
-      "//third_party/protobuf:protobuf_lite",
-    ]
-  }
-
-  executable("masque_server") {
-    testonly = true
-    sources = [ "src/quiche/quic/masque/masque_server_bin.cc" ]
-
-    configs += [ ":quiche_internal_config" ]
-    public_configs = [ ":quiche_config" ]
-
-    deps = [
-      ":epoll_tool_support",
-      ":masque_support",
-      ":quiche",
-      ":quiche_tool_support",
-      "//third_party/abseil-cpp:absl",
-      "//third_party/boringssl",
-      "//third_party/protobuf:protobuf_lite",
-    ]
-  }
-
-  static_library("masque_support") {
-    testonly = true
-    sources = masque_support_srcs + masque_support_hdrs
-
-    configs += [ ":quiche_internal_config" ]
-    public_configs = [ ":quiche_config" ]
-
-    deps = [
-      ":epoll_tool_support",
-      ":net_quic_proto",
-      ":quiche_tool_support",
-      "//third_party/boringssl",
-      "//third_party/protobuf:protobuf_lite",
     ]
   }
 
@@ -398,6 +320,244 @@ if (!is_ios) {
     public_configs = [ ":quiche_config" ]
 
     deps = [ ":quiche" ]
+  }
+
+  # IO abstraction layer (io_tool_support in Bazel). Cross-platform, not
+  # epoll-specific despite the legacy name.
+  static_library("epoll_tool_support") {
+    # TODO(crbug.com/325102878): Remove once usage of the deprecated version of
+    # absl::HexStringToBytes have been removed.
+    if (!build_win_over_msvc) {
+      cflags = [ "-Wno-deprecated-declarations" ]
+    }
+    testonly = true
+
+    sources = [
+                "src/quiche/common/platform/default/quiche_platform_impl/quiche_stream_buffer_allocator_impl.h",
+                "src/quiche/common/platform/default/quiche_platform_impl/quiche_udp_socket_platform_impl.h",
+              ] + io_tool_support_srcs + io_tool_support_hdrs
+
+    # quic_syscall_wrapper and interactive_cli are POSIX-only.
+    if (is_win) {
+      sources -= [
+        "src/quiche/quic/core/quic_syscall_wrapper.cc",
+        "src/quiche/quic/core/quic_syscall_wrapper.h",
+        "src/quiche/quic/tools/interactive_cli.cc",
+        "src/quiche/quic/tools/interactive_cli.h",
+      ]
+
+      # socket_win.inc uses absl::StripAsciiWhitespace without including
+      # the relevant header (absl/strings/ascii.h).
+      if (build_win_over_msvc) {
+        cflags += [ "/FIabsl/strings/ascii.h" ]
+      } else {
+        cflags += [
+          "-include",
+          "absl/strings/ascii.h",
+          "-include",
+          "winsock2.h",
+          "-include",
+          "mswsock.h",
+        ]
+      }
+    }
+
+    configs += [ ":quiche_internal_config" ]
+    public_configs = [ ":quiche_config" ]
+
+    deps = [
+      ":quiche",
+      ":quiche_tool_support",
+      "//third_party/abseil-cpp:absl",
+      "//third_party/boringssl",
+    ]
+  }
+
+  source_set("quic_server_factory") {
+    testonly = true
+    sources = [
+      "src/quiche/quic/tools/quic_server_factory.cc",
+      "src/quiche/quic/tools/quic_server_factory.h",
+    ]
+
+    configs += [ ":quiche_internal_config" ]
+    public_configs = [ ":quiche_config" ]
+
+    deps = [
+      ":epoll_tool_support",
+      ":net_quic_proto",
+      ":quic_server_core",
+      "//third_party/abseil-cpp:absl",
+      "//third_party/boringssl",
+    ]
+  }
+
+  if (!is_win) {
+    static_library("masque_support") {
+      testonly = true
+      sources = masque_support_srcs + masque_support_hdrs
+
+      configs += [ ":quiche_internal_config" ]
+      public_configs = [ ":quiche_config" ]
+
+      deps = [
+        ":epoll_tool_support",
+        ":net_quic_proto",
+        ":quiche_tool_support",
+        "//third_party/boringssl",
+        "//third_party/protobuf:protobuf_lite",
+      ]
+    }
+  }
+
+  executable("quic_client") {
+    testonly = true
+    sources = [ "src/quiche/quic/tools/quic_client_bin.cc" ]
+
+    configs += [ ":quiche_internal_config" ]
+    public_configs = [ ":quiche_config" ]
+
+    deps = [
+      ":epoll_tool_support",
+      ":quic_client_core",
+      ":quiche",
+      ":quiche_tool_support",
+      "//third_party/abseil-cpp:absl",
+      "//third_party/boringssl",
+    ]
+  }
+
+  executable("quic_server") {
+    testonly = true
+    sources = [ "src/quiche/quic/tools/quic_server_bin.cc" ]
+
+    configs += [ ":quiche_internal_config" ]
+    public_configs = [ ":quiche_config" ]
+
+    deps = [
+      ":epoll_tool_support",
+      ":quic_server_core",
+      ":quic_server_factory",
+      ":quiche",
+      ":quiche_tool_support",
+      "//third_party/abseil-cpp:absl",
+      "//third_party/boringssl",
+    ]
+  }
+
+  executable("web_transport_test_server") {
+    testonly = true
+    sources = [ "src/quiche/quic/tools/web_transport_test_server.cc" ]
+
+    configs += [ ":quiche_internal_config" ]
+    public_configs = [ ":quiche_config" ]
+
+    deps = [
+      ":epoll_tool_support",
+      ":quiche",
+      ":quiche_tool_support",
+      "//third_party/abseil-cpp:absl",
+      "//third_party/boringssl",
+    ]
+  }
+
+  if (!is_win) {
+    executable("masque_client") {
+      testonly = true
+
+      # TODO(crbug.com/325102878): Remove once usage of the deprecated version of
+      # absl::HexStringToBytes have been removed.
+      if (!build_win_over_msvc) {
+        cflags = [ "-Wno-deprecated-declarations" ]
+      }
+      sources = [ "src/quiche/quic/masque/masque_client_bin.cc" ]
+
+      configs += [ ":quiche_internal_config" ]
+      public_configs = [ ":quiche_config" ]
+
+      deps = [
+        ":epoll_tool_support",
+        ":masque_support",
+        ":quiche",
+        ":quiche_tool_support",
+        "//third_party/boringssl",
+        "//third_party/protobuf:protobuf_lite",
+      ]
+    }
+  }
+
+  if (!is_win) {
+    executable("masque_server") {
+      testonly = true
+      sources = [ "src/quiche/quic/masque/masque_server_bin.cc" ]
+
+      configs += [ ":quiche_internal_config" ]
+      public_configs = [ ":quiche_config" ]
+
+      deps = [
+        ":epoll_tool_support",
+        ":masque_support",
+        ":quiche",
+        ":quiche_tool_support",
+        "//third_party/abseil-cpp:absl",
+        "//third_party/boringssl",
+        "//third_party/protobuf:protobuf_lite",
+      ]
+    }
+  }
+
+  if (!is_win) {
+    executable("masque_tcp_server") {
+      testonly = true
+      sources = [ "src/quiche/quic/masque/masque_tcp_server_bin.cc" ]
+
+      configs += [ ":quiche_internal_config" ]
+      public_configs = [ ":quiche_config" ]
+
+      deps = [
+        ":epoll_tool_support",
+        ":masque_support",
+        ":quiche",
+        ":quiche_tool_support",
+        "//third_party/boringssl",
+      ]
+    }
+  }
+
+  if (!is_win) {
+    executable("masque_tcp_client") {
+      testonly = true
+      sources = [ "src/quiche/quic/masque/masque_tcp_client_bin.cc" ]
+
+      configs += [ ":quiche_internal_config" ]
+      public_configs = [ ":quiche_config" ]
+
+      deps = [
+        ":epoll_tool_support",
+        ":masque_support",
+        ":quiche",
+        ":quiche_tool_support",
+        "//third_party/boringssl",
+      ]
+    }
+  }
+
+  if (!is_win) {
+    executable("masque_ohttp_client") {
+      testonly = true
+      sources = [ "src/quiche/quic/masque/masque_ohttp_client_bin.cc" ]
+
+      configs += [ ":quiche_internal_config" ]
+      public_configs = [ ":quiche_config" ]
+
+      deps = [
+        ":epoll_tool_support",
+        ":masque_support",
+        ":quiche",
+        ":quiche_tool_support",
+        "//third_party/boringssl",
+      ]
+    }
   }
 
   executable("quic_packet_printer") {
