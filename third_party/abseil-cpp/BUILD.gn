@@ -19,6 +19,9 @@ config("absl_time_apple_framework") {
 group("absl") {
   public_deps = [ ":absl_component_deps" ]
   public_configs = []
+  if (build_win_over_msvc) {
+    public_configs += [ ":absl_include_config" ]
+  }
   if (is_apple) {
     public_configs += [ ":absl_time_apple_framework" ]
   }
@@ -1132,7 +1135,12 @@ absl_source_set("debugging_symbolize") {
   #   -DEFAULTLIB:dbghelp.lib
   # evaluate if this needs to be added here as well.
   if (is_win) {
-    libs = [ "dbghelp" ]
+    if (build_win_over_msvc) {
+      # MSVC doesn't support -l flags; use /DEFAULTLIB instead.
+      ldflags = [ "/DEFAULTLIB:dbghelp.lib" ]
+    } else {
+      libs = [ "dbghelp" ]
+    }
   }
 }
 
@@ -2485,7 +2493,12 @@ absl_source_set("random_internal_seed_material") {
   sources = [ "src/absl/random/internal/seed_material.cc" ]
   if (is_win) {
     # TODO(mbonadei): In the bazel file this is -DEFAULTLIB:bcrypt.lib.
-    libs = [ "bcrypt" ]
+    if (build_win_over_msvc) {
+      # MSVC doesn't support -l flags; use /DEFAULTLIB instead.
+      ldflags = [ "/DEFAULTLIB:bcrypt.lib" ]
+    } else {
+      libs = [ "bcrypt" ]
+    }
   }
   deps = [
     ":base_core_headers",
@@ -4489,7 +4502,14 @@ group("absl_full_deps") {
 }
 
 config("absl_include_config") {
-  include_dirs = [ "src" ]
+  if (build_win_over_msvc) {
+    include_dirs = [
+      "overrides",
+      "src",
+    ]
+  } else {
+    include_dirs = [ "src" ]
+  }
 }
 
 config("absl_define_config") {
