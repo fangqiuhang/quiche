@@ -38,7 +38,7 @@ config("gtest_config") {
     "src/googletest/include",
   ]
 
-  if (is_win) {
+  if (is_win && build_win_over_msvc) {
     cflags = [ "/wd4800" ]  # Unused variable warning.
   }
 
