@@ -122,6 +122,20 @@ is_win = current_os == "win" || current_os == "winuwp"
 is_apple = is_ios || is_mac || is_watchos
 is_posix = !is_win && !is_fuchsia
 
+# True when building for Windows with a MinGW/GCC toolchain (as opposed to
+# MSVC). Detected by querying the compiler for __MINGW32__ via
+# build/win/detect_mingw.py, so it also covers any future non-MSVC Windows
+# compiler. Always false on non-Windows and on MSVC builds.
+#
+# NOTE: exec_script "value" mode parses the script output, so "true"/"false"
+# come back as GN booleans (not strings) — assign them directly, never compare
+# with == "true".
+build_win_over_mingw = false
+if (is_win && !build_win_over_msvc) {
+  build_win_over_mingw =
+      exec_script("//build/win/detect_mingw.py", [ "gcc" ], "value")
+}
+
 # ==============================================================================
 # COMPONENT SETUP
 # ==============================================================================

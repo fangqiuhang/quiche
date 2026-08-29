@@ -12,6 +12,74 @@ config("compiler_defaults") {
       "-pthread",
     ]
   }
+
+  # MinGW has incompatibilities that MSVC doesn't:
+  # - windows.h unconditionally includes wingdi.h (#define ERROR 0)
+  # - _WIN32 is defined but WIN32 is not (some code uses #ifdef WIN32)
+  if (build_win_over_mingw) {
+    defines = [
+      "QUICHE_MINGW",
+      "WIN32",
+    ]
+
+    # Overrides directory for quiche logging (ERROR macro workaround).
+    include_dirs = [
+      "//third_party/quiche/overrides",
+      "//",
+    ]
+
+    ldflags = [
+      "/SUBSYSTEM:CONSOLE",
+      "shell32.lib",
+    ]
+  } else {
+    # GCC/Clang standard.
+    cflags_cc = [ "-std=c++20" ]
+
+    # Repo root on the include path (matches the MSVC branch), so glue headers
+    # like build/source_root.h can be included.
+    include_dirs = [ "//" ]
+
+    # MinGW has incompatibilities that MSVC doesn't:
+    # - windows.h unconditionally includes wingdi.h (#define ERROR 0)
+    # - _WIN32 is defined but WIN32 is not (some code uses #ifdef WIN32)
+    # (|build_win_over_mingw| is defined globally in //build/BUILDCONFIG.gn)
+    if (build_win_over_mingw) {
+      defines += [
+        "QUICHE_MINGW",
+        "WIN32",
+      ]
+    } else if (is_win) {
+      # Clang targeting Windows (e.g. the clang shim installed by Visual
+      # Studio, using MSVC headers but the GNU-style driver flags above).
+      # Needs the same Windows macro hygiene as the MSVC branch, otherwise
+      # windows.h's min/max macros break std::min/std::max, and wingdi.h's
+      # ERROR macro breaks QUIC_LOG(ERROR).
+      defines += [
+        "NOMINMAX",
+        "QUICHE_MSVC",  # Clang here uses MSVC headers/ABI: same ERROR
+                        # workaround.
+        "WIN32",
+      ]
+
+      # lld-link (the default linker here) does not auto-link the standard
+      # Win32 import libraries the way MinGW's GNU ld does, so list the
+      # baseline set the tree relies on.
+      ldflags = [
+        "-ladvapi32",
+        "-lcrypt32",
+        "-lgdi32",
+        "-liphlpapi",
+        "-lole32",
+        "-loleaut32",
+        "-lshell32",
+        "-luser32",
+        "-luuid",
+        "-lversion",
+        "-lwsock32",
+      ]
+    }
+  }
 }
 
 config("executable_ldconfig") {

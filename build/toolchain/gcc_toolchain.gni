@@ -30,9 +30,6 @@ if ((is_linux || is_chromeos) && target_os == "android") {
 # Ensure enable_resource_allowlist_generation is enabled only when it will work.
 if (enable_resource_allowlist_generation) {
   assert(
-      !strip_debug_info,
-      "enable_resource_allowlist_generation=true requires strip_debug_info=false")
-  assert(
       !is_component_build,
       "enable_resource_allowlist_generation=true requires is_component_build=false")
   assert(

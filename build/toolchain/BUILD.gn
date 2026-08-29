@@ -5,6 +5,12 @@
 import("//build/features.gni")
 import("//build/toolchain/gcc_toolchain.gni")
 
+# Local path to the shared Windows tool wrapper (used by the archive tool).
+if (host_os == "win") {
+  _tool_wrapper_path =
+      rebase_path("//build/toolchain/win/tool_wrapper.py", root_build_dir)
+}
+
 clang_toolchain("clang") {
   toolchain_args = {
     current_cpu = current_cpu
@@ -32,8 +38,19 @@ toolchain("gcc") {
   }
 
   tool("alink") {
-    command = "rm -f {{output}} && ar rcs {{output}} {{inputs}}"
+    rspfile = "{{output}}.rsp"
+    if (is_win) {
+      # Build a fresh archive via the Python wrapper: cmd's del/move cannot
+      # handle the forward-slash paths ninja passes, so a bare
+      # `del /f ... & ar rcs ...` keeps stale members of an existing archive
+      # (e.g. objects from sources that were removed). The wrapper always
+      # produces a clean archive.
+      command = "\"$python_path\" $_tool_wrapper_path create-archive {{output}} $rspfile"
+    } else {
+      command = "rm -f \"{{output}}\" && ar rcs {{output}} @$rspfile"
+    }
     description = "AR {{target_output_name}}{{output_extension}}"
+    rspfile_content = "{{inputs}}"
 
     outputs =
         [ "{{target_out_dir}}/{{target_output_name}}{{output_extension}}" ]
@@ -87,22 +104,35 @@ toolchain("gcc") {
     rspfile = "$outfile.rsp"
     if (is_mac) {
       command = "g++ {{ldflags}} -o $outfile @$rspfile {{solibs}} {{libs}}"
+    } else if (is_win) {
+      command = "g++ {{ldflags}} -o $outfile -Wl,--start-group @$rspfile {{solibs}} -Wl,--end-group {{libs}} -lws2_32"
     } else {
       command = "g++ {{ldflags}} -o $outfile -Wl,--start-group @$rspfile {{solibs}} -Wl,--end-group {{libs}}"
     }
     description = "LINK $outfile"
     default_output_dir = "{{root_out_dir}}"
+    if (is_win) {
+      default_output_extension = ".exe"
+    }
     rspfile_content = "{{inputs}}"
     outputs = [ outfile ]
   }
 
   tool("stamp") {
-    command = "touch {{output}}"
+    if (is_win) {
+      command = "cmd /c type nul > \"{{output}}\""
+    } else {
+      command = "touch \"{{output}}\""
+    }
     description = "STAMP {{output}}"
   }
 
   tool("copy") {
-    command = "cp -af {{source}} {{output}}"
+    if (is_win) {
+      command = "cmd /c copy /y \"{{source}}\" \"{{output}}\" > nul"
+    } else {
+      command = "cp -f \"{{source}}\" \"{{output}}\""
+    }
     description = "COPY {{source}} {{output}}"
   }
 }
