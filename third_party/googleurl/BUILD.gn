@@ -69,10 +69,10 @@ source_set("url_test_support") {
   testonly = true
 
   sources = [
-    "gurl_abstract_tests.h",
-    "origin_abstract_tests.cc",
-    "origin_abstract_tests.h",
-    "url_canon_icu_test_helpers.h",
+    "src/url/gurl_abstract_tests.h",
+    "src/url/origin_abstract_tests.cc",
+    "src/url/origin_abstract_tests.h",
+    "src/url/url_canon_icu_test_helpers.h",
   ]
 
   public_deps = [ ":url" ]
