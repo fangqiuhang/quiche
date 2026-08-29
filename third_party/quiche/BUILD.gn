@@ -34,6 +34,21 @@ config("quiche_internal_config") {
   if (is_clang) {
     cflags += [ "-Wno-sign-compare" ]
   }
+  if (build_win_over_msvc) {
+    # Suppress C4244: narrowing conversion in quiche code
+    # (e.g., WebTransportSessionId uint64_t -> uint32_t in std::optional).
+    #
+    # Suppress C4715: "not all control paths return a value" in
+    # blind_sign_auth.cc. QuicheProxyLayerToPpnProxyLayer() (line ~704) and
+    # BlindSignAuthServiceTypeToString() (line ~735) switch over enums covering
+    # every enumerator, but omit a `default:` case and a trailing return, so
+    # MSVC cannot prove the switch is exhaustive and emits C4715. Safe to
+    # suppress: the switch is exhaustive over the enum.
+    cflags += [
+      "/wd4244",
+      "/wd4715",
+    ]
+  }
   if (is_apple) {
     cflags += [ "-Wno-nullability-completeness" ]
     ldflags = [
@@ -50,7 +65,7 @@ config("quiche_config") {
   include_dirs = [
     # The ordering here is important, since headers in overrides/ replace
     # headers in src/common/platform/default.
-    "overrides/mingw",
+    "overrides",
     "src/quiche/common/platform/default",
     "src",
   ]
@@ -59,7 +74,9 @@ config("quiche_config") {
 static_library("quiche") {
   # TODO(crbug.com/325102878): Remove once usage of the deprecated version of
   # absl::HexStringToBytes have been removed.
-  cflags = [ "-Wno-deprecated-declarations" ]
+  if (!build_win_over_msvc) {
+    cflags = [ "-Wno-deprecated-declarations" ]
+  }
   sources = [
               "src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.cc",
               "src/quiche/common/platform/default/quiche_platform_impl/quiche_flags_impl.h",
@@ -297,7 +314,9 @@ static_library("quiche_test_support") {
 
   # TODO(crbug.com/325102878): Remove once usage of the deprecated version of
   # absl::HexStringToBytes have been removed.
-  cflags = [ "-Wno-deprecated-declarations" ]
+  if (!build_win_over_msvc) {
+    cflags = [ "-Wno-deprecated-declarations" ]
+  }
   sources = [
               "src/quiche/common/platform/default/quiche_platform_impl/quiche_expect_bug_impl.h",
               "src/quiche/common/platform/default/quiche_platform_impl/quiche_test_impl.cc",
@@ -355,7 +374,9 @@ if (!is_ios) {
 
     # TODO(crbug.com/325102878): Remove once usage of the deprecated version of
     # absl::HexStringToBytes have been removed.
-    cflags = [ "-Wno-deprecated-declarations" ]
+    if (!build_win_over_msvc) {
+      cflags = [ "-Wno-deprecated-declarations" ]
+    }
     sources = [
       "src/quiche/quic/tools/quic_toy_client.cc",
       "src/quiche/quic/tools/quic_toy_client.h",
@@ -384,7 +405,9 @@ if (!is_ios) {
 
     # TODO(crbug.com/325102878): Remove once usage of the deprecated version of
     # absl::HexStringToBytes have been removed.
-    cflags = [ "-Wno-deprecated-declarations" ]
+    if (!build_win_over_msvc) {
+      cflags = [ "-Wno-deprecated-declarations" ]
+    }
     sources = [ "src/quiche/quic/tools/quic_packet_printer_bin.cc" ]
 
     configs += [ ":quiche_internal_config" ]
@@ -403,7 +426,9 @@ if (!is_ios) {
 
     # TODO(crbug.com/325102878): Remove once usage of the deprecated version of
     # absl::HexStringToBytes have been removed.
-    cflags = [ "-Wno-deprecated-declarations" ]
+    if (!build_win_over_msvc) {
+      cflags = [ "-Wno-deprecated-declarations" ]
+    }
     sources = [ "src/quiche/quic/tools/crypto_message_printer_bin.cc" ]
 
     configs += [ ":quiche_internal_config" ]
@@ -469,7 +494,9 @@ source_set("quiche_tests") {
 
   # TODO(crbug.com/325102878): Remove once usage of the deprecated version of
   # absl::HexStringToBytes have been removed.
-  cflags = [ "-Wno-deprecated-declarations" ]
+  if (!build_win_over_msvc) {
+    cflags = [ "-Wno-deprecated-declarations" ]
+  }
   sources = [
     "src/quiche/binary_http/binary_http_message_test.cc",
     "src/quiche/blind_sign_auth/blind_sign_auth_test.cc",
