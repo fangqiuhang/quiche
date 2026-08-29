@@ -6,7 +6,7 @@
 
 config("re2_config") {
   include_dirs = [ "src" ]
-  if (is_apple) {
+  if (!build_win_over_msvc) {
     cflags = [ "-Wno-deprecated-declarations" ]
   }
 }
