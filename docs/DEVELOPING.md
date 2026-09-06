@@ -2,6 +2,7 @@
 
 ## Git submodules
 - [abseil-cpp](https://github.com/abseil/abseil-cpp.git): `third_party/abseil-cpp/src/`
+- [anonymous-tokens](https://github.com/google/anonymous-tokens.git): `third_party/anonymous_tokens/src/`
 - [boringssl](https://github.com/google/boringssl.git): `third_party/boringssl/src/`
 - [googletest](https://github.com/google/googletest.git): `third_party/googletest/src/`
 - [googleurl](https://quiche.googlesource.com/googleurl.git): `third_party/googleurl/src/`
