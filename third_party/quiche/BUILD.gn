@@ -20,7 +20,7 @@
 #                          ^                        ^                     |
 #                          |                        |                     |
 #                          |                        |                     |
-#                  epoll_tool_support <---  epoll_test_support <----------+ (*)
+#                   io_tool_support <-----  epoll_test_support <----------+ (*)
 #
 #             (*) only used on platforms where epoll tests are built
 
@@ -171,7 +171,7 @@ if (build_epoll_based_tools) {
     public_configs = [ ":quiche_config" ]
 
     deps = [
-      ":epoll_tool_support",
+      ":io_tool_support",
       ":quic_client_core",
       ":quiche",
       ":quiche_tool_support",
@@ -188,30 +188,13 @@ if (build_epoll_based_tools) {
     public_configs = [ ":quiche_config" ]
 
     deps = [
-      ":epoll_tool_support",
+      ":io_tool_support",
       ":quic_server_core",
       ":quic_server_factory",
       ":quiche",
       ":quiche_tool_support",
       "//third_party/abseil-cpp:absl",
       "//third_party/abseil-cpp:base_nullability",
-      "//third_party/boringssl",
-    ]
-  }
-
-  executable("quic_client_interop_test") {
-    testonly = true
-    sources = [ "src/quiche/quic/tools/quic_client_interop_test_bin.cc" ]
-
-    configs += [ ":quiche_internal_config" ]
-    public_configs = [ ":quiche_config" ]
-
-    deps = [
-      ":epoll_tool_support",
-      ":quiche",
-      ":quiche_test_support",
-      ":quiche_tool_support",
-      "//third_party/abseil-cpp:absl",
       "//third_party/boringssl",
     ]
   }
@@ -224,7 +207,7 @@ if (build_epoll_based_tools) {
     public_configs = [ ":quiche_config" ]
 
     deps = [
-      ":epoll_tool_support",
+      ":io_tool_support",
       ":quiche_test_support",
       ":quiche_tool_support",
     ]
@@ -324,7 +307,7 @@ if (!is_ios) {
 
   # IO abstraction layer (io_tool_support in Bazel). Cross-platform, not
   # epoll-specific despite the legacy name.
-  static_library("epoll_tool_support") {
+  static_library("io_tool_support") {
     # TODO(crbug.com/325102878): Remove once usage of the deprecated version of
     # absl::HexStringToBytes have been removed.
     if (!build_win_over_msvc) {
@@ -384,7 +367,7 @@ if (!is_ios) {
     public_configs = [ ":quiche_config" ]
 
     deps = [
-      ":epoll_tool_support",
+      ":io_tool_support",
       ":net_quic_proto",
       ":quic_server_core",
       "//third_party/abseil-cpp:absl",
@@ -401,7 +384,7 @@ if (!is_ios) {
       public_configs = [ ":quiche_config" ]
 
       deps = [
-        ":epoll_tool_support",
+        ":io_tool_support",
         ":net_quic_proto",
         ":quiche_tool_support",
         "//third_party/boringssl",
@@ -418,9 +401,26 @@ if (!is_ios) {
     public_configs = [ ":quiche_config" ]
 
     deps = [
-      ":epoll_tool_support",
+      ":io_tool_support",
       ":quic_client_core",
       ":quiche",
+      ":quiche_tool_support",
+      "//third_party/abseil-cpp:absl",
+      "//third_party/boringssl",
+    ]
+  }
+
+  executable("quic_client_interop_test") {
+    testonly = true
+    sources = [ "src/quiche/quic/tools/quic_client_interop_test_bin.cc" ]
+
+    configs += [ ":quiche_internal_config" ]
+    public_configs = [ ":quiche_config" ]
+
+    deps = [
+      ":io_tool_support",
+      ":quiche",
+      ":quiche_test_support",
       ":quiche_tool_support",
       "//third_party/abseil-cpp:absl",
       "//third_party/boringssl",
@@ -435,7 +435,7 @@ if (!is_ios) {
     public_configs = [ ":quiche_config" ]
 
     deps = [
-      ":epoll_tool_support",
+      ":io_tool_support",
       ":quic_server_core",
       ":quic_server_factory",
       ":quiche",
@@ -453,7 +453,7 @@ if (!is_ios) {
     public_configs = [ ":quiche_config" ]
 
     deps = [
-      ":epoll_tool_support",
+      ":io_tool_support",
       ":quiche",
       ":quiche_tool_support",
       "//third_party/abseil-cpp:absl",
@@ -476,7 +476,7 @@ if (!is_ios) {
       public_configs = [ ":quiche_config" ]
 
       deps = [
-        ":epoll_tool_support",
+        ":io_tool_support",
         ":masque_support",
         ":quiche",
         ":quiche_tool_support",
@@ -495,7 +495,7 @@ if (!is_ios) {
       public_configs = [ ":quiche_config" ]
 
       deps = [
-        ":epoll_tool_support",
+        ":io_tool_support",
         ":masque_support",
         ":quiche",
         ":quiche_tool_support",
@@ -515,7 +515,7 @@ if (!is_ios) {
       public_configs = [ ":quiche_config" ]
 
       deps = [
-        ":epoll_tool_support",
+        ":io_tool_support",
         ":masque_support",
         ":quiche",
         ":quiche_tool_support",
@@ -533,7 +533,7 @@ if (!is_ios) {
       public_configs = [ ":quiche_config" ]
 
       deps = [
-        ":epoll_tool_support",
+        ":io_tool_support",
         ":masque_support",
         ":quiche",
         ":quiche_tool_support",
@@ -570,7 +570,7 @@ if (!is_ios) {
       public_configs = [ ":quiche_config" ]
 
       deps = [
-        ":epoll_tool_support",
+        ":io_tool_support",
         ":masque_private_tokens",
         ":masque_support",
         ":quiche",
@@ -973,7 +973,7 @@ source_set("quiche_tests") {
     ]
     public_deps += [
       ":epoll_test_support",
-      ":epoll_tool_support",
+      ":io_tool_support",
     ]
   }
 }
