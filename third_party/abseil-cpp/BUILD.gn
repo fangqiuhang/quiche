@@ -8,6 +8,16 @@
 
 import("//third_party/abseil-cpp/absl.gni")
 
+# Termux (Android bionic) reports |host_os == "linux"| but the compiler still
+# defines |__ANDROID__|. Detect it so Abseil links -llog for its Android log sink.
+if (current_os == "linux") {
+  _is_android_bionic = exec_script("//build/android/detect_android_boinic.py",
+                                   [ "gcc" ],
+                                   "value")
+} else {
+  _is_android_bionic = false
+}
+
 config("absl_component_build") {
   defines = [ "ABSL_CONSUME_DLL" ]
 }
@@ -2075,7 +2085,7 @@ absl_source_set("log_internal_log_sink_set") {
     ":synchronization",
     ":types_span",
   ]
-  if (is_android) {
+  if (is_android || _is_android_bionic) {
     libs = [ "log" ]
   }
 }
