@@ -9,6 +9,7 @@
 #define ABSL_NONNULL
 #define ABSL_NULLABLE
 #define ABSL_NULLABILITY_COMPATIBLE
+#define ABSL_POINTERS_DEFAULT_NONNULL
 #define absl_nonnull
 #define absl_nullable
 #define absl_nullability_compatible
