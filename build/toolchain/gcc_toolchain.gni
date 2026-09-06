@@ -692,7 +692,7 @@ template("gcc_rust_host_build_tools_toolchain") {
       is_component_build = false
 
       #use_clang_coverage = false
-      use_sanitizer_coverage = false
+      #use_sanitizer_coverage = false
       use_thin_lto = false
     }
 
