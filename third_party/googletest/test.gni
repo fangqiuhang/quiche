@@ -1,0 +1,16 @@
+# Copyright 2026 fangqiuhang. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Minimal test() template for this standalone GN build.
+#
+# Chromium's full //testing/test.gni supports isolate/swarming, Fuchsia
+# packages, and Android APK targets. This glue build only needs the plain
+# executable form, so we forward everything to an executable with testonly set.
+
+template("test") {
+  executable(target_name) {
+    forward_variables_from(invoker, "*")
+    testonly = true
+  }
+}
