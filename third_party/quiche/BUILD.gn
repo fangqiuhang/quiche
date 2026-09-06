@@ -159,46 +159,6 @@ proto_library("net_quic_test_tools_proto") {
 }
 
 if (build_epoll_based_tools) {
-  executable("epoll_quic_client") {
-    testonly = true
-    sources = [
-      "src/quiche/quic/tools/quic_client_bin.cc",
-      "src/quiche/quic/tools/quic_epoll_client_factory.cc",
-      "src/quiche/quic/tools/quic_epoll_client_factory.h",
-    ]
-
-    configs += [ ":quiche_internal_config" ]
-    public_configs = [ ":quiche_config" ]
-
-    deps = [
-      ":io_tool_support",
-      ":quic_client_core",
-      ":quiche",
-      ":quiche_tool_support",
-      "//third_party/abseil-cpp:absl",
-      "//third_party/boringssl",
-    ]
-  }
-
-  executable("epoll_quic_server") {
-    testonly = true
-    sources = [ "src/quiche/quic/tools/quic_server_bin.cc" ]
-
-    configs += [ ":quiche_internal_config" ]
-    public_configs = [ ":quiche_config" ]
-
-    deps = [
-      ":io_tool_support",
-      ":quic_server_core",
-      ":quic_server_factory",
-      ":quiche",
-      ":quiche_tool_support",
-      "//third_party/abseil-cpp:absl",
-      "//third_party/abseil-cpp:base_nullability",
-      "//third_party/boringssl",
-    ]
-  }
-
   static_library("epoll_test_support") {
     testonly = true
     sources = io_test_support_srcs + io_test_support_hdrs
