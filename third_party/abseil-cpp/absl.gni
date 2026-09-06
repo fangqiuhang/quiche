@@ -67,8 +67,8 @@ template("absl_test") {
 
       visibility = [ "//third_party/abseil-cpp/:*" ]
       deps += [
-        #"//third_party/googletest:gmock",
-        #"//third_party/googletest:gtest",
+        "//testing:gmock",
+        "//testing:gtest",
       ]
     }
   }

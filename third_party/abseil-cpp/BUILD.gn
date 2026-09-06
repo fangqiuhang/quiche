@@ -454,7 +454,7 @@ absl_test("base_nullability_test") {
 }
 
 absl_test("base_nullability_default_nonnull_test") {
-  sources = [ "nullability_default_nonnull_test.cc" ]
+  sources = [ "src/absl/base/nullability_default_nonnull_test.cc" ]
   deps = [ ":base_nullability" ]
 }
 
@@ -3199,10 +3199,10 @@ absl_test("strings_cord_rep_btree_test") {
     ":base_config",
     ":base_raw_logging_internal",
     ":cleanup",
-    ":string_view",
     ":strings",
     ":strings_cord_internal",
     ":strings_cord_rep_test_util",
+    ":strings_string_view",
   ]
 }
 
@@ -3791,6 +3791,15 @@ absl_test("time_test") {
     "src/absl/time/time_test.cc",
     "src/absl/time/time_zone_test.cc",
   ]
+  if (is_win) {
+    # These tests load IANA timezones (e.g. "America/New_York") which require a
+    # zoneinfo database that is not available on Windows.
+    sources -= [
+      "src/absl/time/format_test.cc",
+      "src/absl/time/time_test.cc",
+      "src/absl/time/time_zone_test.cc",
+    ]
+  }
   deps = [
     ":base_config",
     ":base_core_headers",
@@ -4559,7 +4568,7 @@ config("absl_test_cflags_cc") {
       "-Wno-unused-private-field",
     ]
   }
-  if (is_win) {
+  if (build_win_over_msvc) {
     cflags_cc += [
       "/wd4101",  # unreferenced local variable
     ]
@@ -4568,7 +4577,7 @@ config("absl_test_cflags_cc") {
 
 config("absl_test_config") {
   cflags_cc = []
-  if (is_win && !is_clang) {
+  if (build_win_over_msvc) {
     cflags_cc += [ "/wd4996" ]
   }
   if (is_clang) {
@@ -4585,7 +4594,1397 @@ if (absl_build_tests) {
   import("//testing/test.gni")
 
   if (!is_component_build) {
-    test("absl_tests") {
+    # ==============================================================================
+    # New absl library targets (glue) to support Chromium-parity tests
+    # ==============================================================================
+
+    absl_source_set("base_atomic_hook_test_helper") {
+      testonly = true
+      sources = [ "src/absl/base/internal/atomic_hook_test_helper.cc" ]
+      public = [ "src/absl/base/internal/atomic_hook_test_helper.h" ]
+      deps = [
+        ":base_atomic_hook",
+        ":base_core_headers",
+      ]
+    }
+
+    absl_source_set("base_exception_safety_testing") {
+      testonly = true
+      sources = [ "src/absl/base/internal/exception_safety_testing.cc" ]
+      public = [ "src/absl/base/internal/exception_safety_testing.h" ]
+      deps = [
+        ":base_config",
+        ":base_pretty_function",
+        ":memory",
+        ":meta_type_traits",
+        ":strings",
+        ":strings_string_view",
+        ":utility",
+        "//testing:gmock",
+        "//testing:gtest",
+      ]
+    }
+
+    absl_source_set("base_hardening") {
+      public = [ "src/absl/base/internal/hardening.h" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+      ]
+    }
+
+    absl_source_set("base_iterator_traits_internal") {
+      public = [ "src/absl/base/internal/iterator_traits.h" ]
+      deps = [
+        ":base_config",
+        ":meta_type_traits",
+      ]
+    }
+
+    absl_source_set("base_iterator_traits_test_helper") {
+      public = [ "src/absl/base/internal/iterator_traits_test_helper.h" ]
+      deps = [ ":base_config" ]
+    }
+
+    absl_source_set("base_nullability_traits_internal") {
+      public = [ "src/absl/base/internal/nullability_traits.h" ]
+      deps = [
+        ":base_config",
+        ":base_nullability",
+      ]
+    }
+
+    absl_source_set("container_chunked_queue") {
+      sources = [ "src/absl/container/internal/chunked_queue.h" ]
+      public = [ "src/absl/container/chunked_queue.h" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":base_hardening",
+        ":base_iterator_traits_internal",
+        ":container_layout",
+      ]
+    }
+
+    absl_source_set("container_hashtable_control_bytes") {
+      public = [ "src/absl/container/internal/hashtable_control_bytes.h" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":base_endian",
+        ":numeric_bits",
+      ]
+    }
+
+    absl_source_set("container_heterogeneous_lookup_testing") {
+      testonly = true
+      public = [ "src/absl/container/internal/heterogeneous_lookup_testing.h" ]
+      deps = [
+        ":base_config",
+        ":container_test_instance_tracker",
+        "//testing:gmock",
+        "//testing:gtest",
+      ]
+    }
+
+    absl_source_set("container_linked_hash_map") {
+      public = [ "src/absl/container/linked_hash_map.h" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":base_throw_delegate",
+        ":container_common",
+        ":container_flat_hash_set",
+      ]
+    }
+
+    absl_source_set("container_linked_hash_set") {
+      public = [ "src/absl/container/linked_hash_set.h" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":container_common",
+        ":container_flat_hash_set",
+      ]
+    }
+
+    absl_source_set("container_raw_hash_set_resize_impl") {
+      public = [ "src/absl/container/internal/raw_hash_set_resize_impl.h" ]
+      deps = [ ":base_config" ]
+    }
+
+    absl_source_set("functional_bind_back") {
+      sources = [ "src/absl/functional/internal/back_binder.h" ]
+      public = [ "src/absl/functional/bind_back.h" ]
+      deps = [
+        ":base_config",
+        ":container_compressed_tuple",
+        ":utility",
+      ]
+    }
+
+    absl_source_set("log_internal_container") {
+      public = [ "src/absl/log/internal/container.h" ]
+      deps = [
+        ":base_config",
+        ":meta_requires",
+        ":strings",
+      ]
+    }
+
+    absl_source_set("meta_constexpr_testing") {
+      testonly = true
+      public = [ "src/absl/meta/internal/constexpr_testing.h" ]
+      deps = [ ":base_config" ]
+    }
+
+    absl_source_set("meta_requires") {
+      public = [ "src/absl/meta/internal/requires.h" ]
+      deps = [ ":base_config" ]
+    }
+
+    absl_source_set("strings_append_and_overwrite") {
+      public = [ "src/absl/strings/internal/append_and_overwrite.h" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":base_hardening",
+        ":base_throw_delegate",
+        ":strings_resize_and_overwrite",
+      ]
+    }
+
+    absl_source_set("strings_generic_printer") {
+      sources = [
+        "src/absl/strings/internal/generic_printer.cc",
+        "src/absl/strings/internal/generic_printer_internal.h",
+      ]
+      public = [ "src/absl/strings/internal/generic_printer.h" ]
+      deps = [
+        ":base_config",
+        ":log_internal_container",
+        ":meta_requires",
+        ":strings",
+        ":strings_str_format",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_source_set("strings_resize_and_overwrite") {
+      public = [ "src/absl/strings/resize_and_overwrite.h" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":base_dynamic_annotations",
+        ":base_hardening",
+        ":base_throw_delegate",
+      ]
+    }
+
+    absl_source_set("strings_stringify_stream") {
+      public = [ "src/absl/strings/internal/stringify_stream.h" ]
+      deps = [
+        ":base_config",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_source_set("time_clock_interface") {
+      sources = [ "src/absl/time/clock_interface.cc" ]
+      public = [ "src/absl/time/clock_interface.h" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":base_no_destructor",
+        ":base_nullability",
+        ":base_raw_logging_internal",
+        ":synchronization",
+        ":time",
+      ]
+    }
+
+    absl_source_set("time_internal_cctz_test_time_zone_names") {
+      testonly = true
+      sources = [ "src/absl/time/internal/cctz/src/test_time_zone_names.cc" ]
+      public = [ "src/absl/time/internal/cctz/src/test_time_zone_names.h" ]
+      deps = [ ":base_config" ]
+    }
+
+    absl_source_set("time_simulated_clock") {
+      testonly = true
+      sources = [ "src/absl/time/simulated_clock.cc" ]
+      public = [ "src/absl/time/simulated_clock.h" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":base_nullability",
+        ":synchronization",
+        ":time",
+        ":time_clock_interface",
+      ]
+    }
+
+    absl_source_set("types_optional_ref") {
+      public = [ "src/absl/types/optional_ref.h" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":base_hardening",
+      ]
+    }
+
+    absl_source_set("types_source_location") {
+      sources = [ "src/absl/types/source_location.cc" ]
+      public = [ "src/absl/types/source_location.h" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":base_nullability",
+      ]
+    }
+
+    absl_test("base_atomic_hook_test") {
+      sources = [ "src/absl/base/internal/atomic_hook_test.cc" ]
+      deps = [
+        ":base_atomic_hook",
+        ":base_atomic_hook_test_helper",
+        ":base_core_headers",
+      ]
+    }
+
+    absl_test("base_bit_cast_test") {
+      sources = [ "src/absl/base/bit_cast_test.cc" ]
+      deps = [
+        ":base",
+        ":base_core_headers",
+      ]
+    }
+
+    absl_test("base_attributes_test") {
+      sources = [ "src/absl/base/attributes_test.cc" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+      ]
+    }
+
+    absl_test("base_throw_delegate_test") {
+      sources = [ "src/absl/base/throw_delegate_test.cc" ]
+      deps = [
+        ":base_config",
+        ":base_throw_delegate",
+      ]
+    }
+
+    absl_test("base_errno_saver_test") {
+      sources = [ "src/absl/base/internal/errno_saver_test.cc" ]
+      deps = [
+        ":base_errno_saver",
+        ":base_strerror",
+      ]
+    }
+
+    absl_test("base_exception_safety_testing_test") {
+      sources = [ "src/absl/base/exception_safety_testing_test.cc" ]
+      deps = [
+        ":base_exception_safety_testing",
+        ":memory",
+      ]
+    }
+
+    absl_test("base_spinlock_test") {
+      deps = [ ":base_spinlock_test_common" ]
+    }
+
+    absl_test("base_endian_test") {
+      sources = [ "src/absl/base/internal/endian_test.cc" ]
+      deps = [
+        ":base_config",
+        ":base_endian",
+      ]
+    }
+
+    absl_test("base_call_once_test") {
+      sources = [ "src/absl/base/call_once_test.cc" ]
+      deps = [
+        ":base",
+        ":base_core_headers",
+        ":synchronization",
+      ]
+    }
+
+    absl_test("base_casts_test") {
+      sources = [ "src/absl/base/casts_test.cc" ]
+      deps = [
+        ":base",
+        ":base_config",
+      ]
+    }
+
+    absl_test("base_hardening_test") {
+      sources = [ "src/absl/base/internal/hardening_test.cc" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":base_hardening",
+      ]
+    }
+
+    absl_test("base_nullability_traits_test") {
+      sources = [ "src/absl/base/internal/nullability_traits_test.cc" ]
+      deps = [
+        ":base_config",
+        ":base_nullability",
+        ":base_nullability_traits_internal",
+      ]
+    }
+
+    absl_test("base_raw_logging_test") {
+      sources = [ "src/absl/base/raw_logging_test.cc" ]
+      deps = [
+        ":base_raw_logging_internal",
+        ":strings",
+      ]
+    }
+
+    absl_test("base_sysinfo_test") {
+      sources = [ "src/absl/base/internal/sysinfo_test.cc" ]
+      deps = [
+        ":base",
+        ":synchronization",
+      ]
+    }
+
+    absl_test("base_thread_identity_test") {
+      sources = [ "src/absl/base/internal/thread_identity_test.cc" ]
+      deps = [
+        ":base",
+        ":base_core_headers",
+        ":synchronization",
+      ]
+    }
+
+    absl_test("base_scoped_set_env_test") {
+      sources = [ "src/absl/base/internal/scoped_set_env_test.cc" ]
+      deps = [ ":base_scoped_set_env" ]
+    }
+
+    absl_test("base_log_severity_test") {
+      sources = [ "src/absl/base/log_severity_test.cc" ]
+      deps = [
+        ":base_log_severity",
+        ":flags_flag_internal",
+        ":flags_marshalling",
+        ":strings",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("base_strerror_test") {
+      sources = [ "src/absl/base/internal/strerror_test.cc" ]
+      deps = [
+        ":base_strerror",
+        ":strings",
+      ]
+    }
+
+    absl_test("base_fast_type_id_test") {
+      sources = [ "src/absl/base/fast_type_id_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":base_fast_type_id",
+      ]
+    }
+
+    absl_test("base_unique_small_name_test") {
+      sources = [ "src/absl/base/internal/unique_small_name_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":strings",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("base_optimization_test") {
+      sources = [ "src/absl/base/optimization_test.cc" ]
+      deps = [ ":base_core_headers" ]
+    }
+
+    absl_test("base_iterator_traits_test") {
+      sources = [ "src/absl/base/internal/iterator_traits_test.cc" ]
+      deps = [
+        ":base_config",
+        ":base_iterator_traits_internal",
+        ":base_iterator_traits_test_helper",
+      ]
+    }
+
+    absl_test("container_compressed_tuple_test") {
+      sources = [ "src/absl/container/internal/compressed_tuple_test.cc" ]
+      deps = [
+        ":container_compressed_tuple",
+        ":container_test_instance_tracker",
+        ":memory",
+        ":utility",
+      ]
+    }
+
+    absl_test("container_test_instance_tracker_test") {
+      sources = [ "src/absl/container/internal/test_instance_tracker_test.cc" ]
+      deps = [ ":container_test_instance_tracker" ]
+    }
+
+    absl_test("container_hash_policy_testing_test") {
+      sources = [ "src/absl/container/internal/hash_policy_testing_test.cc" ]
+      deps = [ ":container_hash_policy_testing" ]
+    }
+
+    absl_test("container_hash_policy_traits_test") {
+      sources = [ "src/absl/container/internal/hash_policy_traits_test.cc" ]
+      deps = [
+        ":container_hash_policy_traits",
+        ":container_memory",
+      ]
+    }
+
+    absl_test("container_hashtablez_sampler_test") {
+      sources = [ "src/absl/container/internal/hashtablez_sampler_test.cc" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":container_hashtablez_sampler",
+        ":profiling_sample_recorder",
+        ":random",
+        ":synchronization",
+        ":synchronization_thread_pool",
+        ":time",
+      ]
+    }
+
+    absl_test("container_hashtable_control_bytes_test") {
+      sources =
+          [ "src/absl/container/internal/hashtable_control_bytes_test.cc" ]
+      deps = [
+        ":base_config",
+        ":container_hashtable_control_bytes",
+      ]
+    }
+
+    absl_test("container_raw_hash_set_resize_impl_test") {
+      sources =
+          [ "src/absl/container/internal/raw_hash_set_resize_impl_test.cc" ]
+      deps = [
+        ":base_config",
+        ":container_raw_hash_set_resize_impl",
+      ]
+    }
+
+    absl_test("container_unordered_set_test") {
+      sources = [ "src/absl/container/internal/unordered_set_test.cc" ]
+      deps = [
+        ":container_unordered_set_constructor_test",
+        ":container_unordered_set_lookup_test",
+        ":container_unordered_set_members_test",
+        ":container_unordered_set_modifiers_test",
+      ]
+    }
+
+    absl_test("container_unordered_map_test") {
+      sources = [ "src/absl/container/internal/unordered_map_test.cc" ]
+      deps = [
+        ":container_unordered_map_constructor_test",
+        ":container_unordered_map_lookup_test",
+        ":container_unordered_map_members_test",
+        ":container_unordered_map_modifiers_test",
+      ]
+    }
+
+    absl_test("container_linked_hash_set_test") {
+      sources = [ "src/absl/container/linked_hash_set_test.cc" ]
+      deps = [
+        ":base_config",
+        ":container_hash_generator_testing",
+        ":container_hash_policy_testing",
+        ":container_heterogeneous_lookup_testing",
+        ":container_linked_hash_set",
+        ":container_test_allocator",
+        ":container_test_instance_tracker",
+        ":container_unordered_set_constructor_test",
+        ":container_unordered_set_lookup_test",
+        ":container_unordered_set_members_test",
+        ":container_unordered_set_modifiers_test",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("container_linked_hash_map_test") {
+      sources = [ "src/absl/container/linked_hash_map_test.cc" ]
+      deps = [
+        ":base_config",
+        ":base_exception_testing",
+        ":container_hash_generator_testing",
+        ":container_hash_policy_testing",
+        ":container_heterogeneous_lookup_testing",
+        ":container_linked_hash_map",
+        ":container_test_allocator",
+        ":container_test_instance_tracker",
+        ":container_unordered_map_constructor_test",
+        ":container_unordered_map_lookup_test",
+        ":container_unordered_map_members_test",
+        ":container_unordered_map_modifiers_test",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("container_chunked_queue_test") {
+      sources = [ "src/absl/container/chunked_queue_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":base_throw_delegate",
+        ":container_chunked_queue",
+        ":container_test_allocator",
+        ":strings",
+      ]
+    }
+
+    absl_test("debugging_leak_check_test") {
+      sources = [ "src/absl/debugging/leak_check_test.cc" ]
+      deps = [
+        ":base_config",
+        ":debugging_leak_check",
+        ":log",
+      ]
+    }
+
+    absl_test("debugging_stack_consumption_test") {
+      sources = [ "src/absl/debugging/internal/stack_consumption_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":debugging_stack_consumption",
+        ":log",
+      ]
+    }
+
+    absl_test("flags_config_test") {
+      sources = [ "src/absl/flags/config_test.cc" ]
+      deps = [ ":flags_config" ]
+    }
+
+    absl_test("flags_marshalling_test") {
+      sources = [ "src/absl/flags/marshalling_test.cc" ]
+      deps = [ ":flags_marshalling" ]
+    }
+
+    absl_test("flags_parse_test") {
+      sources = [ "src/absl/flags/parse_test.cc" ]
+      deps = [
+        ":base_scoped_set_env",
+        ":flags_config",
+        ":flags_flag",
+        ":flags_parse",
+        ":flags_reflection",
+        ":flags_usage_internal",
+        ":log",
+        ":strings",
+        ":strings_string_view",
+        ":types_span",
+      ]
+    }
+
+    absl_test("flags_path_util_test") {
+      sources = [ "src/absl/flags/internal/path_util_test.cc" ]
+      deps = [ ":flags_path_util" ]
+    }
+
+    absl_test("flags_program_name_test") {
+      sources = [ "src/absl/flags/internal/program_name_test.cc" ]
+      deps = [
+        ":flags_program_name",
+        ":strings",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("flags_sequence_lock_test") {
+      sources = [ "src/absl/flags/internal/sequence_lock_test.cc" ]
+      deps = [
+        ":base",
+        ":container_fixed_array",
+        ":flags_flag_internal",
+        ":time",
+      ]
+    }
+
+    absl_test("flags_usage_config_test") {
+      sources = [ "src/absl/flags/usage_config_test.cc" ]
+      deps = [
+        ":flags_config",
+        ":flags_path_util",
+        ":flags_program_name",
+        ":strings",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("functional_bind_back_test") {
+      sources = [ "src/absl/functional/bind_back_test.cc" ]
+      deps = [
+        ":functional_bind_back",
+        ":memory",
+      ]
+    }
+
+    absl_test("functional_bind_front_test") {
+      sources = [ "src/absl/functional/bind_front_test.cc" ]
+      deps = [
+        ":functional_bind_front",
+        ":memory",
+      ]
+    }
+
+    absl_test("hash_city_test") {
+      sources = [ "src/absl/hash/internal/city_test.cc" ]
+      deps = [ ":hash_city" ]
+    }
+
+    absl_test("hash_low_level_hash_test") {
+      sources = [ "src/absl/hash/internal/low_level_hash_test.cc" ]
+      deps = [
+        ":hash",
+        ":strings",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("log_internal_structured_proto_test") {
+      sources = [ "src/absl/log/internal/structured_proto_test.cc" ]
+      deps = [
+        ":base_config",
+        ":log_internal_proto",
+        ":strings_string_view",
+        ":types_span",
+      ]
+    }
+
+    absl_test("log_internal_container_test") {
+      sources = [ "src/absl/log/internal/container_test.cc" ]
+      deps = [
+        ":base_config",
+        ":log_internal_container",
+        ":strings",
+        ":strings_str_format",
+        ":types_span",
+      ]
+    }
+
+    absl_test("meta_constexpr_testing_test") {
+      sources = [ "src/absl/meta/internal/constexpr_testing_test.cc" ]
+      deps = [ ":meta_constexpr_testing" ]
+    }
+
+    absl_test("meta_requires_test") {
+      sources = [ "src/absl/meta/internal/requires_test.cc" ]
+      deps = [ ":meta_requires" ]
+    }
+
+    absl_test("numeric_bits_test") {
+      sources = [ "src/absl/numeric/bits_test.cc" ]
+      deps = [
+        ":numeric_bits",
+        ":random",
+      ]
+    }
+
+    absl_test("random_bernoulli_distribution_test") {
+      sources = [ "src/absl/random/bernoulli_distribution_test.cc" ]
+      deps = [
+        ":random",
+        ":random_distributions",
+        ":random_internal_pcg_engine",
+        ":random_internal_sequence_urbg",
+      ]
+    }
+
+    absl_test("random_beta_distribution_test") {
+      sources = [ "src/absl/random/beta_distribution_test.cc" ]
+      deps = [
+        ":log",
+        ":numeric_representation",
+        ":random",
+        ":random_distributions",
+        ":random_internal_distribution_test_util",
+        ":random_internal_pcg_engine",
+        ":random_internal_sequence_urbg",
+        ":strings",
+        ":strings_str_format",
+      ]
+    }
+
+    absl_test("random_generators_test") {
+      sources = [ "src/absl/random/generators_test.cc" ]
+      deps = [
+        ":numeric_int128",
+        ":random",
+        ":random_distributions",
+      ]
+    }
+
+    absl_test("random_log_uniform_int_distribution_test") {
+      sources = [ "src/absl/random/log_uniform_int_distribution_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":log",
+        ":random",
+        ":random_distributions",
+        ":random_internal_distribution_test_util",
+        ":random_internal_pcg_engine",
+        ":random_internal_sequence_urbg",
+        ":strings",
+        ":strings_str_format",
+      ]
+    }
+
+    absl_test("random_discrete_distribution_test") {
+      sources = [ "src/absl/random/discrete_distribution_test.cc" ]
+      deps = [
+        ":log",
+        ":random",
+        ":random_distributions",
+        ":random_internal_distribution_test_util",
+        ":random_internal_pcg_engine",
+        ":random_internal_sequence_urbg",
+        ":strings",
+      ]
+    }
+
+    absl_test("random_poisson_distribution_test") {
+      sources = [ "src/absl/random/poisson_distribution_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":container_flat_hash_map",
+        ":log",
+        ":random",
+        ":random_distributions",
+        ":random_internal_distribution_test_util",
+        ":random_internal_pcg_engine",
+        ":random_internal_sequence_urbg",
+        ":strings",
+        ":strings_str_format",
+      ]
+    }
+
+    absl_test("random_exponential_distribution_test") {
+      sources = [ "src/absl/random/exponential_distribution_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":log",
+        ":numeric_representation",
+        ":random",
+        ":random_distributions",
+        ":random_internal_distribution_test_util",
+        ":random_internal_pcg_engine",
+        ":random_internal_sequence_urbg",
+        ":strings",
+        ":strings_str_format",
+      ]
+    }
+
+    absl_test("random_gaussian_distribution_test") {
+      sources = [ "src/absl/random/gaussian_distribution_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":log",
+        ":numeric_representation",
+        ":random",
+        ":random_distributions",
+        ":random_internal_distribution_test_util",
+        ":random_internal_sequence_urbg",
+        ":strings",
+        ":strings_str_format",
+      ]
+    }
+
+    absl_test("random_uniform_int_distribution_test") {
+      sources = [ "src/absl/random/uniform_int_distribution_test.cc" ]
+      deps = [
+        ":log",
+        ":random",
+        ":random_distributions",
+        ":random_internal_distribution_test_util",
+        ":random_internal_pcg_engine",
+        ":random_internal_sequence_urbg",
+        ":strings",
+      ]
+    }
+
+    absl_test("random_uniform_real_distribution_test") {
+      sources = [ "src/absl/random/uniform_real_distribution_test.cc" ]
+      deps = [
+        ":log",
+        ":numeric_representation",
+        ":random",
+        ":random_distributions",
+        ":random_internal_distribution_test_util",
+        ":random_internal_pcg_engine",
+        ":random_internal_sequence_urbg",
+        ":strings",
+      ]
+    }
+
+    absl_test("random_zipf_distribution_test") {
+      sources = [ "src/absl/random/zipf_distribution_test.cc" ]
+      deps = [
+        ":log",
+        ":random",
+        ":random_distributions",
+        ":random_internal_distribution_test_util",
+        ":random_internal_pcg_engine",
+        ":random_internal_sequence_urbg",
+        ":strings",
+      ]
+    }
+
+    absl_test("random_bit_gen_ref_test") {
+      sources = [ "src/absl/random/bit_gen_ref_test.cc" ]
+      deps = [
+        ":base_config",
+        ":base_fast_type_id",
+        ":random",
+        ":random_bit_gen_ref",
+        ":random_internal_sequence_urbg",
+      ]
+    }
+
+    absl_test("random_mocking_bit_gen_test") {
+      sources = [ "src/absl/random/mocking_bit_gen_test.cc" ]
+      deps = [
+        ":random",
+        ":random_bit_gen_ref",
+        ":random_mock_distributions",
+        ":random_mocking_bit_gen",
+      ]
+    }
+
+    absl_test("random_examples_test") {
+      sources = [ "src/absl/random/examples_test.cc" ]
+      deps = [ ":random" ]
+    }
+
+    absl_test("random_seed_sequences_test") {
+      sources = [ "src/absl/random/seed_sequences_test.cc" ]
+      deps = [
+        ":random",
+        ":random_internal_nonsecure_base",
+        ":random_seed_sequences",
+      ]
+    }
+
+    absl_test("random_internal_traits_test") {
+      sources = [ "src/absl/random/internal/traits_test.cc" ]
+      deps = [ ":random_internal_traits" ]
+    }
+
+    absl_test("random_internal_generate_real_test") {
+      sources = [ "src/absl/random/internal/generate_real_test.cc" ]
+      deps = [
+        ":flags_flag",
+        ":numeric_bits",
+        ":random_internal_generate_real",
+      ]
+    }
+
+    absl_test("random_internal_distribution_test_util_test") {
+      sources = [ "src/absl/random/internal/distribution_test_util_test.cc" ]
+      deps = [ ":random_internal_distribution_test_util" ]
+    }
+
+    absl_test("random_internal_fastmath_test") {
+      sources = [ "src/absl/random/internal/fastmath_test.cc" ]
+      deps = [ ":random_internal_fastmath" ]
+    }
+
+    absl_test("random_internal_explicit_seed_seq_test") {
+      sources = [ "src/absl/random/internal/explicit_seed_seq_test.cc" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":random_internal_explicit_seed_seq",
+      ]
+    }
+
+    absl_test("random_internal_salted_seed_seq_test") {
+      sources = [ "src/absl/random/internal/salted_seed_seq_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":random_internal_salted_seed_seq",
+        ":random_internal_seed_material",
+      ]
+    }
+
+    absl_test("random_internal_chi_square_test") {
+      sources = [ "src/absl/random/internal/chi_square_test.cc" ]
+      deps = [
+        ":algorithm_container",
+        ":base_core_headers",
+        ":random_internal_distribution_test_util",
+      ]
+    }
+
+    absl_test("random_internal_fast_uniform_bits_test") {
+      sources = [ "src/absl/random/internal/fast_uniform_bits_test.cc" ]
+      deps = [
+        ":base_config",
+        ":random_internal_fast_uniform_bits",
+      ]
+    }
+
+    absl_test("random_internal_nonsecure_base_test") {
+      sources = [ "src/absl/random/internal/nonsecure_base_test.cc" ]
+      deps = [
+        ":algorithm_container",
+        ":container_flat_hash_set",
+        ":random",
+        ":random_distributions",
+        ":random_internal_nonsecure_base",
+        ":synchronization",
+      ]
+    }
+
+    absl_test("random_internal_seed_material_test") {
+      sources = [ "src/absl/random/internal/seed_material_test.cc" ]
+      deps = [
+        ":random_internal_seed_material",
+        ":types_span",
+      ]
+    }
+
+    absl_test("random_internal_entropy_pool_test") {
+      sources = [ "src/absl/random/internal/entropy_pool_test.cc" ]
+      deps = [
+        ":container_flat_hash_set",
+        ":random_internal_entropy_pool",
+        ":synchronization",
+      ]
+    }
+
+    absl_test("random_internal_pcg_engine_test") {
+      sources = [ "src/absl/random/internal/pcg_engine_test.cc" ]
+      deps = [
+        ":random_internal_explicit_seed_seq",
+        ":random_internal_pcg_engine",
+      ]
+    }
+
+    absl_test("random_internal_randen_engine_test") {
+      sources = [ "src/absl/random/internal/randen_engine_test.cc" ]
+      deps = [
+        ":log",
+        ":random_internal_explicit_seed_seq",
+        ":random_internal_randen_engine",
+        ":time",
+      ]
+    }
+
+    absl_test("random_internal_randen_test") {
+      sources = [ "src/absl/random/internal/randen_test.cc" ]
+      deps = [ ":random_internal_randen" ]
+    }
+
+    absl_test("random_internal_randen_slow_test") {
+      sources = [ "src/absl/random/internal/randen_slow_test.cc" ]
+      deps = [
+        ":random_internal_platform",
+        ":random_internal_randen_slow",
+      ]
+    }
+
+    absl_test("random_internal_wide_multiply_test") {
+      sources = [ "src/absl/random/internal/wide_multiply_test.cc" ]
+      deps = [
+        ":numeric_int128",
+        ":random_internal_traits",
+        ":random_internal_wide_multiply",
+      ]
+    }
+
+    absl_test("random_internal_iostream_state_saver_test") {
+      sources = [ "src/absl/random/internal/iostream_state_saver_test.cc" ]
+      deps = [ ":random_internal_iostream_state_saver" ]
+    }
+
+    absl_test("random_internal_uniform_helper_test") {
+      sources = [ "src/absl/random/internal/uniform_helper_test.cc" ]
+      deps = [ ":random_internal_uniform_helper" ]
+    }
+
+    absl_test("strings_resize_and_overwrite_test") {
+      sources = [ "src/absl/strings/resize_and_overwrite_test.cc" ]
+      deps = [
+        ":base_dynamic_annotations",
+        ":log_absl_check",
+        ":strings_resize_and_overwrite",
+      ]
+    }
+
+    absl_test("strings_append_and_overwrite_test") {
+      sources = [ "src/absl/strings/internal/append_and_overwrite_test.cc" ]
+      deps = [
+        ":log_absl_check",
+        ":strings_append_and_overwrite",
+      ]
+    }
+
+    absl_test("strings_escaping_test") {
+      sources = [
+        "src/absl/strings/escaping_test.cc",
+        "src/absl/strings/internal/escaping_test_common.h",
+      ]
+      deps = [
+        ":base_core_headers",
+        ":container_fixed_array",
+        ":log_check",
+        ":strings",
+        ":strings_charset",
+        ":strings_cord",
+        ":strings_str_format",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("strings_memutil_test") {
+      sources = [
+        "src/absl/strings/internal/memutil.h",
+        "src/absl/strings/internal/memutil_test.cc",
+      ]
+      deps = [
+        ":base_core_headers",
+        ":strings",
+      ]
+    }
+
+    absl_test("strings_utf8_test") {
+      sources = [ "src/absl/strings/internal/utf8_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":strings_internal",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("strings_string_constant_test") {
+      sources = [ "src/absl/strings/internal/string_constant_test.cc" ]
+      deps = [
+        ":strings",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("strings_stringify_stream_test") {
+      sources = [ "src/absl/strings/internal/stringify_stream_test.cc" ]
+      deps = [
+        ":base_config",
+        ":strings_str_format",
+        ":strings_string_view",
+        ":strings_stringify_stream",
+      ]
+    }
+
+    absl_test("strings_cordz_handle_test") {
+      sources = [ "src/absl/strings/internal/cordz_handle_test.cc" ]
+      deps = [
+        ":base_config",
+        ":memory",
+        ":random",
+        ":random_distributions",
+        ":strings_cordz_handle",
+        ":synchronization",
+        ":synchronization_thread_pool",
+        ":time",
+      ]
+    }
+
+    absl_test("strings_cordz_sample_token_test") {
+      sources = [ "src/absl/strings/internal/cordz_sample_token_test.cc" ]
+      deps = [
+        ":base_config",
+        ":memory",
+        ":random",
+        ":strings_cord_internal",
+        ":strings_cordz_handle",
+        ":strings_cordz_info",
+        ":strings_cordz_sample_token",
+        ":strings_cordz_test_helpers",
+        ":strings_cordz_update_tracker",
+        ":synchronization",
+        ":synchronization_thread_pool",
+        ":time",
+      ]
+    }
+
+    absl_test("strings_cord_test") {
+      sources = [ "src/absl/strings/cord_test.cc" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":base_endian",
+        ":base_no_destructor",
+        ":container_fixed_array",
+        ":functional_function_ref",
+        ":hash",
+        ":hash_testing",
+        ":log",
+        ":log_check",
+        ":random",
+        ":strings",
+        ":strings_cord",
+        ":strings_cord_internal",
+        ":strings_cord_test_helpers",
+        ":strings_cordz_functions",
+        ":strings_cordz_statistics",
+        ":strings_cordz_test_helpers",
+        ":strings_cordz_update_tracker",
+        ":strings_str_format",
+        ":strings_string_view",
+        ":types_compare",
+        ":types_span",
+      ]
+    }
+
+    absl_test("strings_substitute_test") {
+      sources = [ "src/absl/strings/substitute_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":strings",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("strings_str_split_test") {
+      sources = [ "src/absl/strings/str_split_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":base_dynamic_annotations",
+        ":container_btree",
+        ":container_flat_hash_map",
+        ":container_node_hash_map",
+        ":hash",
+        ":strings",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("strings_ostringstream_test") {
+      sources = [ "src/absl/strings/internal/ostringstream_test.cc" ]
+      deps = [ ":strings_internal" ]
+    }
+
+    absl_test("strings_resize_uninitialized_test") {
+      sources = [ "src/absl/strings/internal/resize_uninitialized_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":meta_type_traits",
+        ":strings_internal",
+      ]
+    }
+
+    absl_test("strings_str_join_test") {
+      sources = [ "src/absl/strings/str_join_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":memory",
+        ":strings",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("strings_str_cat_test") {
+      sources = [ "src/absl/strings/str_cat_test.cc" ]
+      deps = [
+        ":base_config",
+        ":strings",
+        ":strings_str_format",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("strings_numbers_test") {
+      sources = [
+        "src/absl/strings/internal/numbers_test_common.h",
+        "src/absl/strings/numbers_test.cc",
+      ]
+      deps = [
+        ":base_config",
+        ":cleanup",
+        ":log",
+        ":numeric_int128",
+        ":random",
+        ":random_distributions",
+        ":strings",
+        ":strings_internal",
+        ":strings_pow10_helper",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("strings_strip_test") {
+      sources = [ "src/absl/strings/strip_test.cc" ]
+      deps = [
+        ":strings",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("strings_charconv_test") {
+      sources = [ "src/absl/strings/charconv_test.cc" ]
+      deps = [
+        ":strings",
+        ":strings_pow10_helper",
+        ":strings_str_format",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("strings_charconv_parse_test") {
+      sources = [
+        "src/absl/strings/internal/charconv_parse.h",
+        "src/absl/strings/internal/charconv_parse_test.cc",
+      ]
+      deps = [
+        ":base_config",
+        ":log_check",
+        ":strings",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("strings_charconv_bigint_test") {
+      sources = [
+        "src/absl/strings/internal/charconv_bigint.h",
+        "src/absl/strings/internal/charconv_bigint_test.cc",
+        "src/absl/strings/internal/charconv_parse.h",
+      ]
+      deps = [
+        ":base_config",
+        ":strings",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("strings_pow10_helper_test") {
+      sources = [ "src/absl/strings/internal/pow10_helper_test.cc" ]
+      deps = [
+        ":strings_pow10_helper",
+        ":strings_str_format",
+      ]
+    }
+
+    absl_test("strings_generic_printer_test") {
+      sources = [ "src/absl/strings/internal/generic_printer_test.cc" ]
+      deps = [
+        ":base_config",
+        ":base_core_headers",
+        ":cleanup",
+        ":container_flat_hash_map",
+        ":status",
+        ":status_statusor",
+        ":strings",
+        ":strings_generic_printer",
+        ":strings_str_format",
+        ":strings_string_view",
+      ]
+    }
+
+    absl_test("time_clock_interface_test") {
+      sources = [ "src/absl/time/clock_interface_test.cc" ]
+      deps = [
+        ":functional_bind_front",
+        ":synchronization",
+        ":time",
+        ":time_clock_interface",
+      ]
+    }
+
+    absl_test("time_simulated_clock_test") {
+      sources = [ "src/absl/time/simulated_clock_test.cc" ]
+      deps = [
+        ":base_core_headers",
+        ":base_raw_logging_internal",
+        ":functional_bind_front",
+        ":random",
+        ":synchronization",
+        ":time",
+        ":time_clock_interface",
+        ":time_simulated_clock",
+      ]
+    }
+
+    absl_test("time_flag_test") {
+      sources = [ "src/absl/time/flag_test.cc" ]
+      deps = [
+        ":flags_flag",
+        ":flags_reflection",
+        ":time",
+      ]
+    }
+
+    absl_test("time_internal_cctz_civil_time_test") {
+      sources = [ "src/absl/time/internal/cctz/src/civil_time_test.cc" ]
+      deps = [
+        ":base_config",
+        ":time_internal_cctz_civil_time",
+      ]
+    }
+
+    absl_test("time_internal_cctz_time_zone_format_test") {
+      sources = [ "src/absl/time/internal/cctz/src/time_zone_format_test.cc" ]
+      deps = [
+        ":base_config",
+        ":time_internal_cctz_civil_time",
+        ":time_internal_cctz_time_zone",
+      ]
+    }
+
+    absl_test("time_internal_cctz_time_zone_lookup_test") {
+      sources = [
+        "src/absl/time/internal/cctz/src/time_zone_lookup_test.cc",
+        "src/absl/time/internal/cctz/src/tzfile.h",
+      ]
+      deps = [
+        ":base_config",
+        ":time_internal_cctz_civil_time",
+        ":time_internal_cctz_test_time_zone_names",
+        ":time_internal_cctz_time_zone",
+      ]
+    }
+
+    absl_test("types_source_location_test") {
+      sources = [ "src/absl/types/source_location_test.cc" ]
+      deps = [
+        ":base_config",
+        ":strings_string_view",
+        ":types_source_location",
+      ]
+    }
+
+    absl_test("types_compare_test") {
+      sources = [ "src/absl/types/compare_test.cc" ]
+      deps = [
+        ":base",
+        ":types_compare",
+      ]
+    }
+
+    absl_test("types_optional_ref_test") {
+      sources = [ "src/absl/types/optional_ref_test.cc" ]
+      deps = [
+        ":base_config",
+        ":log",
+        ":strings",
+        ":types_optional_ref",
+      ]
+    }
+
+    test("absl_unittests") {
       testonly = true
       deps = [
         ":algorithm_container_test",
@@ -4601,19 +6000,57 @@ if (absl_build_tests) {
         ":cleanup_test",
 
         # TODO(mbonadei): Fix issue with EXPECT_DEATH and uncomment.
-        ":container_btree_test",
+        # ":container_btree_test",
+        ":base_atomic_hook_test",
+        ":base_attributes_test",
+        ":base_bit_cast_test",
+        ":base_call_once_test",
+        ":base_casts_test",
+        ":base_endian_test",
+        ":base_errno_saver_test",
+        ":base_exception_safety_testing_test",
+        ":base_fast_type_id_test",
+        ":base_hardening_test",
+        ":base_iterator_traits_test",
+        ":base_log_severity_test",
+        ":base_nullability_traits_test",
+        ":base_optimization_test",
+        ":base_raw_logging_test",
+        ":base_scoped_set_env_test",
+        ":base_spinlock_test",
+        ":base_strerror_test",
+        ":base_sysinfo_test",
+        ":base_thread_identity_test",
+        ":base_throw_delegate_test",
+        ":base_unique_small_name_test",
+        ":container_chunked_queue_test",
         ":container_common_policy_traits_test",
+        ":container_compressed_tuple_test",
         ":container_fixed_array_test",
         ":container_flat_hash_map_test",
         ":container_flat_hash_set_test",
         ":container_hash_function_defaults_test",
+        ":container_hashtable_control_bytes_test",
+
+        # container_hash_policy_testing_test is order-dependent (global id
+        # counter shared across the whole binary) and fails in an aggregate
+        # binary; container_hash_policy_traits_test uses the same "Test"
+        # fixture name as common_policy_traits_test.
+        ":container_hashtablez_sampler_test",
         ":container_inlined_vector_test",
+        ":container_layout_test",
+        ":container_linked_hash_map_test",
+        ":container_linked_hash_set_test",
         ":container_node_hash_map_test",
         ":container_node_hash_set_test",
         ":container_node_slot_policy_test",
         ":container_raw_hash_set_allocator_test",
+        ":container_raw_hash_set_resize_impl_test",
         ":container_raw_hash_set_test",
         ":container_sample_element_size_test",
+        ":container_test_instance_tracker_test",
+        ":container_unordered_map_test",
+        ":container_unordered_set_test",
         ":crc_cord_state_test",
         ":crc_crc32c_test",
         ":crc_memcpy_test",
@@ -4621,13 +6058,26 @@ if (absl_build_tests) {
         ":debugging_bounded_utf8_length_sequence_test",
         ":debugging_decode_rust_punycode_test",
         ":debugging_demangle_rust_test",
+        ":debugging_leak_check_test",
+        ":debugging_stack_consumption_test",
         ":debugging_stacktrace_test",
         ":debugging_utf8_for_code_point_test",
+        ":flags_config_test",
         ":flags_flag_test",
+        ":flags_marshalling_test",
+        ":flags_parse_test",
+        ":flags_path_util_test",
+        ":flags_program_name_test",
+        ":flags_sequence_lock_test",
+        ":flags_usage_config_test",
+        ":function_ref_test",
         ":functional_any_invocable_test",
-        ":functional_function_ref_test",
+        ":functional_bind_back_test",
+        ":functional_bind_front_test",
         ":functional_overload_test",
+        ":hash_city_test",
         ":hash_instantiated_test",
+        ":hash_low_level_hash_test",
         ":hash_test",
         ":log_absl_check_test",
         ":log_absl_log_basic_test",
@@ -4636,27 +6086,67 @@ if (absl_build_tests) {
         ":log_flags_test",
         ":log_format_test",
         ":log_globals_test",
+        ":log_internal_container_test",
         ":log_internal_fnmatch_test",
         ":log_internal_stderr_log_sink_test",
+        ":log_internal_structured_proto_test",
         ":log_macro_hygiene_test",
         ":log_modifier_methods_test",
         ":log_scoped_mock_log_test",
         ":log_sink_test",
         ":log_streamer_test",
         ":log_stripping_test",
+        ":log_structured_test",
         ":log_vlog_is_on_test",
-        ":memory_memory_test",
+        ":memory_test",
+        ":meta_constexpr_testing_test",
+        ":meta_requires_test",
         ":meta_type_traits_test",
+        ":numeric_bits_test",
         ":numeric_int128_test",
         ":profiling_exponential_biased_test",
         ":profiling_periodic_sampler_test",
+        ":random_bernoulli_distribution_test",
+        ":random_beta_distribution_test",
+        ":random_discrete_distribution_test",
         ":random_distributions_test",
+        ":random_examples_test",
+        ":random_exponential_distribution_test",
+        ":random_gaussian_distribution_test",
+        ":random_generators_test",
+        ":random_internal_chi_square_test",
+        ":random_internal_distribution_test_util_test",
+        ":random_internal_entropy_pool_test",
+        ":random_internal_fast_uniform_bits_test",
+        ":random_internal_fastmath_test",
+        ":random_internal_generate_real_test",
+        ":random_internal_iostream_state_saver_test",
+        ":random_internal_nonsecure_base_test",
+        ":random_internal_pcg_engine_test",
+        ":random_internal_randen_engine_test",
+        ":random_internal_randen_slow_test",
+        ":random_internal_randen_test",
+        ":random_internal_seed_material_test",
+        ":random_internal_traits_test",
+        ":random_internal_uniform_helper_test",
+        ":random_internal_wide_multiply_test",
+        ":random_log_uniform_int_distribution_test",
         ":random_mock_distributions_test",
-        ":status_status_matchers_test",
-        ":status_status_test",
+        ":random_mocking_bit_gen_test",
+        ":random_poisson_distribution_test",
+        ":random_seed_sequences_test",
+        ":random_uniform_int_distribution_test",
+        ":random_uniform_real_distribution_test",
+        ":random_zipf_distribution_test",
+        ":status_matchers_test",
         ":status_statusor_test",
+        ":status_test",
+        ":strings_append_and_overwrite_test",
         ":strings_ascii_test",
         ":strings_char_formatting_test",
+        ":strings_charconv_bigint_test",
+        ":strings_charconv_parse_test",
+        ":strings_charconv_test",
         ":strings_charset_test",
         ":strings_cord_buffer_test",
         ":strings_cord_data_edge_test",
@@ -4664,38 +6154,85 @@ if (absl_build_tests) {
         ":strings_cord_rep_btree_reader_test",
         ":strings_cord_rep_btree_test",
         ":strings_cord_rep_crc_test",
+        ":strings_cord_test",
         ":strings_cordz_functions_test",
+        ":strings_cordz_handle_test",
         ":strings_cordz_info_statistics_test",
         ":strings_cordz_info_test",
+        ":strings_cordz_sample_token_test",
         ":strings_cordz_test",
         ":strings_cordz_update_scope_test",
         ":strings_cordz_update_tracker_test",
         ":strings_damerau_levenshtein_distance_test",
+        ":strings_escaping_test",
+        ":strings_generic_printer_test",
         ":strings_has_absl_stringify_test",
         ":strings_has_ostream_operator_test",
         ":strings_match_test",
+        ":strings_memutil_test",
+        ":strings_numbers_test",
+        ":strings_ostringstream_test",
+        ":strings_pow10_helper_test",
+        ":strings_resize_and_overwrite_test",
+        ":strings_resize_uninitialized_test",
+        ":strings_str_cat_test",
         ":strings_str_format_arg_test",
         ":strings_str_format_bind_test",
         ":strings_str_format_checker_test",
         ":strings_str_format_convert_test",
         ":strings_str_format_extension_test",
         ":strings_str_format_output_test",
-        ":strings_str_format_parser_test",
         ":strings_str_format_test",
+        ":strings_str_join_test",
         ":strings_str_replace_test",
+        ":strings_str_split_test",
+        ":strings_string_constant_test",
         ":strings_string_view_test",
+        ":strings_stringify_stream_test",
+        ":strings_strip_test",
+        ":strings_substitute_test",
+        ":strings_utf8_test",
         ":synchronization_barrier_test",
         ":synchronization_graphcycles_test",
         ":synchronization_kernel_timeout_internal_test",
         ":synchronization_mutex_test",
         ":synchronization_per_thread_sem_test",
         ":synchronization_waiter_test",
+        ":time_clock_interface_test",
+        ":time_flag_test",
+        ":time_internal_cctz_civil_time_test",
+        ":time_simulated_clock_test",
         ":time_test",
-        ":types_optional_test",
+        ":types_compare_test",
+        ":types_optional_ref_test",
+        ":types_source_location_test",
         ":types_span_test",
         ":types_variant_test",
         "//third_party/googletest:gtest_main",
       ]
+
+      # cctz time_zone tests need the zoneinfo database (unavailable on Windows)
+      if (!is_win) {
+        deps += [
+          ":time_internal_cctz_time_zone_format_test",
+          ":time_internal_cctz_time_zone_lookup_test",
+        ]
+      }
+
+      # BitGenRefTest.IsConvertibleTest fails on MSVC (conversion operator is
+      # not selected by overload resolution).
+      if (!build_win_over_msvc) {
+        deps += [ ":random_bit_gen_ref_test" ]
+      }
+
+      # std::random_device is unsupported on mingw/libstdc++, so these
+      # seed-seq tests can only run on MSVC.
+      if (build_win_over_msvc) {
+        deps += [
+          ":random_internal_explicit_seed_seq_test",
+          ":random_internal_salted_seed_seq_test",
+        ]
+      }
     }
   }
 }
