@@ -542,6 +542,25 @@ if (!is_ios) {
     }
   }
 
+  static_library("masque_private_tokens") {
+    testonly = true
+    sources = masque_private_tokens_srcs + masque_private_tokens_hdrs
+
+    configs += [ ":quiche_internal_config" ]
+    public_configs = [ ":quiche_config" ]
+
+    public_deps = []
+
+    deps = [
+      "//third_party/abseil-cpp:absl",
+      "//third_party/anonymous_tokens:crypto_utils",
+      "//third_party/anonymous_tokens:rsa_blinder",
+      "//third_party/anonymous_tokens:rsa_bssa_client",
+      "//third_party/anonymous_tokens:tokens_encodings",
+      "//third_party/boringssl",
+    ]
+  }
+
   if (!is_win) {
     executable("masque_ohttp_client") {
       testonly = true
@@ -552,6 +571,7 @@ if (!is_ios) {
 
       deps = [
         ":epoll_tool_support",
+        ":masque_private_tokens",
         ":masque_support",
         ":quiche",
         ":quiche_tool_support",
