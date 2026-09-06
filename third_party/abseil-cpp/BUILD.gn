@@ -4591,7 +4591,7 @@ config("absl_test_config") {
 }
 
 if (absl_build_tests) {
-  import("//testing/test.gni")
+  import("//third_party/googletest/test.gni")
 
   if (!is_component_build) {
     # ==============================================================================
@@ -4620,8 +4620,8 @@ if (absl_build_tests) {
         ":strings",
         ":strings_string_view",
         ":utility",
-        "//testing:gmock",
-        "//testing:gtest",
+        "//third_party/googletest:gmock",
+        "//third_party/googletest:gtest",
       ]
     }
 
@@ -4682,8 +4682,8 @@ if (absl_build_tests) {
       deps = [
         ":base_config",
         ":container_test_instance_tracker",
-        "//testing:gmock",
-        "//testing:gtest",
+        "//third_party/googletest:gmock",
+        "//third_party/googletest:gtest",
       ]
     }
 
