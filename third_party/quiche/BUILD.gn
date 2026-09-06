@@ -149,7 +149,10 @@ proto_library("net_quic_proto") {
 }
 
 proto_library("net_quic_test_tools_proto") {
-  visibility = [ ":qpack_offline_decoder" ]
+  visibility = [
+    ":qpack_offline_decoder",
+    ":quiche_test_support",
+  ]
 
   sources = [ "src/quiche/quic/test_tools/send_algorithm_test_result.proto" ]
 
@@ -195,6 +198,7 @@ static_library("quiche_test_support") {
   public_configs = [ ":quiche_config" ]
 
   deps = [
+    ":net_quic_test_tools_proto",
     ":quiche",
     ":quiche_tool_support",
     "//third_party/boringssl",
@@ -642,6 +646,7 @@ source_set("quiche_tests") {
     "src/quiche/blind_sign_auth/blind_sign_auth_test.cc",
     "src/quiche/blind_sign_auth/cached_blind_sign_auth_test.cc",
     "src/quiche/common/btree_scheduler_test.cc",
+    "src/quiche/common/bug_utils_test.cc",
     "src/quiche/common/capsule_test.cc",
     "src/quiche/common/http/http_header_block_test.cc",
     "src/quiche/common/http/http_header_storage_test.cc",
@@ -668,6 +673,9 @@ source_set("quiche_tests") {
     "src/quiche/common/quiche_mem_slice_test.cc",
     "src/quiche/common/quiche_random_test.cc",
     "src/quiche/common/quiche_simple_arena_test.cc",
+    "src/quiche/common/quiche_socket_address_test.cc",
+    "src/quiche/common/quiche_status_utils_test.cc",
+    "src/quiche/common/quiche_string_tuple_test.cc",
     "src/quiche/common/quiche_text_utils_test.cc",
     "src/quiche/common/simple_buffer_allocator_test.cc",
     "src/quiche/common/structured_headers_generated_test.cc",
@@ -738,6 +746,7 @@ source_set("quiche_tests") {
     "src/quiche/http2/test_tools/http2_frame_builder_test.cc",
     "src/quiche/http2/test_tools/http2_random_test.cc",
     "src/quiche/http2/test_tools/random_decoder_test_base_test.cc",
+    "src/quiche/oblivious_http/buffers/oblivious_http_buffers_integration_test.cc",
     "src/quiche/oblivious_http/buffers/oblivious_http_request_test.cc",
     "src/quiche/oblivious_http/buffers/oblivious_http_response_test.cc",
     "src/quiche/oblivious_http/common/oblivious_http_header_key_config_test.cc",
@@ -897,8 +906,17 @@ source_set("quiche_tests") {
     "src/quiche/quic/tools/quic_tcp_like_trace_converter_test.cc",
     "src/quiche/quic/tools/simple_ticket_crypter_test.cc",
     "src/quiche/web_transport/encapsulated/encapsulated_web_transport_test.cc",
+    "src/quiche/web_transport/test_tools/in_memory_stream_test.cc",
     "src/quiche/web_transport/web_transport_headers_test.cc",
   ]
+
+  if (build_win_over_msvc) {
+    # The bundled googletest compares raw C strings by pointer (not content) in
+    # EXPECT_EQ, and MSVC does not pool string literals, so
+    # BugUtilsTest.BugListener fails on MSVC builds. GCC/Clang pool identical
+    # string literals, so the test passes on mingw/Linux/mac.
+    sources -= [ "src/quiche/common/bug_utils_test.cc" ]
+  }
 
   data = [ "src/quiche/common/platform/api/testdir/" ]
 
@@ -908,6 +926,8 @@ source_set("quiche_tests") {
   deps = [
     ":blind_sign_auth",
     ":blind_sign_auth_test_support",
+    "//third_party/googletest:gmock",
+    "//third_party/googletest:gtest",
   ]
   if (is_ios) {
     deps += [ ":test_data" ]
@@ -938,6 +958,20 @@ source_set("quiche_tests") {
   }
 }
 
+# A standalone gtest binary that runs all of the QUICHE unit tests, in the
+# same spirit as Chromium's net_unittests target.
+executable("quiche_unittests") {
+  testonly = true
+
+  configs += [ ":quiche_internal_config" ]
+  public_configs = [ ":quiche_config" ]
+
+  deps = [
+    ":quiche_tests",
+    "//third_party/googletest:gtest_main",
+  ]
+}
+
 source_set("blind_sign_auth") {
   sources = [
     "src/quiche/blind_sign_auth/blind_sign_auth.cc",
@@ -946,8 +980,12 @@ source_set("blind_sign_auth") {
     "src/quiche/blind_sign_auth/blind_sign_message_interface.h",
     "src/quiche/blind_sign_auth/blind_sign_message_response.cc",
     "src/quiche/blind_sign_auth/blind_sign_message_response.h",
+    "src/quiche/blind_sign_auth/blind_sign_tracing_hooks.h",
     "src/quiche/blind_sign_auth/cached_blind_sign_auth.cc",
     "src/quiche/blind_sign_auth/cached_blind_sign_auth.h",
+    "src/quiche/blind_sign_auth/direct_task_bundle.cc",
+    "src/quiche/blind_sign_auth/direct_task_bundle.h",
+    "src/quiche/blind_sign_auth/task_bundle.h",
   ]
   configs += [ ":quiche_internal_config" ]
   public_configs = [ ":quiche_config" ]
@@ -955,10 +993,17 @@ source_set("blind_sign_auth") {
   deps = [
     ":quiche",
     "//third_party/abseil-cpp:absl",
+    "//third_party/anonymous_tokens:rsa_bssa_public_metadata_client",
     "//third_party/boringssl",
   ]
 
-  public_deps = [ ":blind_sign_auth_proto" ]
+  public_deps = [
+    ":blind_sign_auth_proto",
+    "//third_party/anonymous_tokens:anonymous_tokens_rsa_bssa_client",
+    "//third_party/anonymous_tokens:crypto_utils",
+    "//third_party/anonymous_tokens:proto_utils",
+    "//third_party/anonymous_tokens:tokens_encodings",
+  ]
 
   defines = [ "IS_QUICHE_IMPL" ]
 }
@@ -976,20 +1021,18 @@ proto_library("blind_sign_auth_proto") {
   sources = protobuf_blind_sign_auth
   cc_generator_options = "lite=true,dllexport_decl=COMPONENT_EXPORT(QUICHE):"
 
-  cc_include = "base/component_export.h"
+  cc_include = "third_party/googleurl/src/polyfills/base/component_export.h"
   component_build_force_source_set = true
 
   proto_in_dir = "src"
 
-  #link_public_deps = [ "//third_party/quiche" ]
+  link_public_deps = [ "//third_party/googleurl:url" ]
 
-  #deps = [ "//third_party/anonymous_tokens:anonymous_tokens_cc_proto" ]
+  deps = [ "//third_party/anonymous_tokens:anonymous_tokens_cc_proto" ]
 
   import_dirs = [ "//third_party/anonymous_tokens/src/" ]
 
   defines = [ "IS_QUICHE_IMPL" ]
-
-  #extra_configs = [ "//build/config/compiler:wexit_time_destructors" ]
 }
 
 source_set("blind_sign_auth_test_support") {
@@ -1009,8 +1052,8 @@ source_set("blind_sign_auth_test_support") {
     ":quiche_tool_support",
   ]
 
-  #public_deps =
-  #    [ "//third_party/anonymous_tokens:anonymous_tokens_test_support" ]
+  public_deps =
+      [ "//third_party/anonymous_tokens:anonymous_tokens_test_support" ]
 }
 
 if (is_android) {
