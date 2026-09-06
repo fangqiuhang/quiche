@@ -28,12 +28,12 @@ git submodule update --init --recursive
 Then build via GN+Ninja:
 ```
 gn gen out
-ninja -C out epoll_quic_client
+ninja -C out quic_client
 ```
 
 Finally run the simple QUIC client:
 ```
-./out/epoll_quic_client https://www.iqiyi.com/ --quic_version=RFCv1 --disable_certificate_verification
+./out/quic_client https://www.qiyi.com/ --quic_version=RFCv1 --disable_certificate_verification
 ```
 
 ## Mac
