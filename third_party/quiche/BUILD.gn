@@ -38,15 +38,38 @@ config("quiche_internal_config") {
     # Suppress C4244: narrowing conversion in quiche code
     # (e.g., WebTransportSessionId uint64_t -> uint32_t in std::optional).
     #
+    # Suppress C4267: size_t narrowing to quiche::QuicPacketLength reported
+    # from inside MSVC STL (xutility) while instantiating quiche templates
+    # that feed a size_t into a QuicPacketLength (a narrow integer type)
+    # parameter; the values are bounded so the loss is benign.
+    #
     # Suppress C4715: "not all control paths return a value" in
     # blind_sign_auth.cc. QuicheProxyLayerToPpnProxyLayer() (line ~704) and
     # BlindSignAuthServiceTypeToString() (line ~735) switch over enums covering
     # every enumerator, but omit a `default:` case and a trailing return, so
     # MSVC cannot prove the switch is exhaustive and emits C4715. Safe to
     # suppress: the switch is exhaustive over the enum.
+    #
+    # Suppress C4834: discarding [[nodiscard]] return value. In
+    # quic_crypto_server_config_test.cc the SerializedProtoEquals matcher
+    # calls protobuf's SerializeToString() (which returns a [[nodiscard]]
+    # bool) and discards the result.
     cflags += [
       "/wd4244",
+      "/wd4267",
       "/wd4715",
+      "/wd4834",
+    ]
+  } else {
+    cflags += [
+      "-Wno-deprecated-declarations",  # absl::WriterMutexLock deprecated
+                                       # pointer ctor
+                                       # (cached_blind_sign_auth.h).
+      "-Wno-subobject-linkage",  # gtest parameterized test defined in an
+                                 # anonymous namespace
+                                 # (ObliviousHttpParameterizedTest).
+      "-Wno-unused-result",  # protobuf SerializeToString() [[nodiscard]] bool
+                             # ignored (quic_crypto_server_config_test.cc).
     ]
   }
   if (is_apple) {
