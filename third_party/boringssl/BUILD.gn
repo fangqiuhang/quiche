@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import("//build/features.gni")
+import("//third_party/googletest/test.gni")
 import("src/gen/sources.gni")
 
 # Config for us and everybody else depending on BoringSSL.
@@ -89,6 +90,14 @@ if (is_msan) {
 
 static_library("boringssl") {
   sources = rebase_path(all_sources, ".", "src")
+  if (build_win_over_mingw) {
+    # On MinGW, winpthreads' PTHREAD_RWLOCK_INITIALIZER lazy init is racy under
+    # concurrent first use (crashes the X509*Threads tests). Replace the pthread
+    # backend with a glue copy that eagerly initializes rwlocks (see
+    # thread_pthread_mingw.cc).
+    sources -= [ "src/crypto/thread_pthread.cc" ]
+    sources += [ "thread_pthread_mingw.cc" ]
+  }
   public = rebase_path(all_headers, ".", "src")
   friend = [ ":*" ]
   deps = [ "//third_party/boringssl/src/third_party/fiat:fiat_license" ]
@@ -100,4 +109,83 @@ static_library("boringssl") {
 
   public_configs = [ ":external_config" ]
   configs += [ ":component_config" ]
+}
+
+# Shared test support (crypto/test helpers + test assembly).
+# Shared test support (crypto/test helpers + test assembly + the gtest main).
+# gtest_main.cc is compiled ONCE here (the MSVC toolchain gives it a
+# target-less object path, so it must not be compiled in multiple targets);
+# each test target does `sources -= ["src/crypto/test/gtest_main.cc"]` to avoid
+# a duplicate object.
+source_set("test_support") {
+  testonly = true
+  sources = rebase_path(test_support_sources, ".", "src")
+  sources += [
+    "src/crypto/test/gtest_main.cc",
+    "test_data_glue.cc",
+  ]
+  public = rebase_path(test_support_internal_headers, ".", "src")
+  defines = [ "BORINGSSL_CUSTOM_GET_TEST_DATA" ]
+  deps = [
+    ":boringssl",
+    ":test_support_asm",
+    "//third_party/googletest:gmock",
+    "//third_party/googletest:gtest",
+  ]
+  configs += [ ":internal_config" ]
+}
+
+test("boringssl_crypto_tests") {
+  sources = rebase_path(crypto_test_sources, ".", "src")
+  sources -= [ "src/crypto/test/gtest_main.cc" ]
+  deps = [
+    ":boringssl",
+    ":test_support",
+    "//third_party/googletest:gmock",
+    "//third_party/googletest:gtest",
+  ]
+  configs = [ ":internal_config" ]
+  if (build_win_over_msvc) {
+    ldflags = [ "ws2_32.lib" ]
+  }
+}
+
+test("boringssl_ssl_tests") {
+  sources = rebase_path(ssl_test_sources, ".", "src")
+  sources -= [ "src/crypto/test/gtest_main.cc" ]
+  deps = [
+    ":boringssl",
+    ":test_support",
+    "//third_party/googletest:gmock",
+    "//third_party/googletest:gtest",
+  ]
+  configs = [ ":internal_config" ]
+  if (build_win_over_msvc) {
+    ldflags = [ "ws2_32.lib" ]
+  }
+}
+
+test("boringssl_pki_tests") {
+  sources = rebase_path(pki_test_sources, ".", "src")
+  sources -= [ "src/crypto/test/gtest_main.cc" ]
+  if (is_win) {
+    # OPENSSL_SMALL disables DSA on Windows, so five VerifyCertificateChain /
+    # PathBuilder cases fail. Drop the test files that define them on Windows;
+    # the other platforms keep the full suite.
+    sources -= [
+      "src/pki/path_builder_verify_certificate_chain_unittest.cc",
+      "src/pki/verify_certificate_chain_pkits_unittest.cc",
+      "src/pki/verify_certificate_chain_unittest.cc",
+    ]
+  }
+  deps = [
+    ":boringssl",
+    ":test_support",
+    "//third_party/googletest:gmock",
+    "//third_party/googletest:gtest",
+  ]
+  configs = [ ":internal_config" ]
+  if (build_win_over_msvc) {
+    ldflags = [ "ws2_32.lib" ]
+  }
 }
