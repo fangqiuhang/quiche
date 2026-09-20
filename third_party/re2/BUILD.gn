@@ -56,7 +56,62 @@ static_library("re2") {
   public_configs = [ ":re2_config" ]
   public_deps = [ "//third_party/abseil-cpp:absl" ]
 }
+
 #fuzzer_test("third_party_re2_fuzzer") {
 #  sources = [ "src/re2/fuzzing/re2_fuzzer.cc" ]
 #  deps = [ ":re2" ]
 #}
+
+import("//third_party/googletest/test.gni")
+
+# re2 test support (comparative tester etc.). util/pcre.cc compiles to stubs
+# when USEPCRE is not defined, so no real PCRE library is needed.
+source_set("re2_testing") {
+  testonly = true
+  sources = [
+    "src/re2/testing/backtrack.cc",
+    "src/re2/testing/dump.cc",
+    "src/re2/testing/exhaustive_tester.cc",
+    "src/re2/testing/null_walker.cc",
+    "src/re2/testing/regexp_generator.cc",
+    "src/re2/testing/string_generator.cc",
+    "src/re2/testing/tester.cc",
+    "src/util/pcre.cc",
+  ]
+  deps = [
+    ":re2",
+    "//third_party/googletest:gtest",
+  ]
+}
+
+test("re2_unittests") {
+  testonly = true
+  sources = [
+    "src/re2/testing/charclass_test.cc",
+    "src/re2/testing/compile_test.cc",
+    "src/re2/testing/dfa_test.cc",
+
+    # The exhaustive tests (exhaustive{,1,2,3}_test.cc) are excluded: they run
+    # an enormous matrix of cases (hours) and are impractical in an aggregate
+    # binary.
+    "src/re2/testing/filtered_re2_test.cc",
+    "src/re2/testing/mimics_pcre_test.cc",
+    "src/re2/testing/parse_test.cc",
+    "src/re2/testing/possible_match_test.cc",
+    "src/re2/testing/random_test.cc",
+    "src/re2/testing/re2_arg_test.cc",
+    "src/re2/testing/re2_test.cc",
+    "src/re2/testing/regexp_test.cc",
+    "src/re2/testing/required_prefix_test.cc",
+    "src/re2/testing/search_test.cc",
+    "src/re2/testing/set_test.cc",
+    "src/re2/testing/simplify_test.cc",
+    "src/re2/testing/string_generator_test.cc",
+  ]
+  deps = [
+    ":re2",
+    ":re2_testing",
+    "//third_party/googletest:gtest",
+    "//third_party/googletest:gtest_main",
+  ]
+}
