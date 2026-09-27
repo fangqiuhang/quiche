@@ -4590,6 +4590,19 @@ config("absl_test_config") {
   }
 }
 
+# MSVC warning suppressions for third-party Abseil code (applied to every
+# absl_source_set / absl_test target via absl.gni).
+config("absl_warning_suppressions") {
+  if (build_win_over_msvc) {
+    cflags_cc = [
+      "/wd4068",  # Unknown pragma 'GCC' (str_format bind_test.cc).
+      "/wd4180",  # Qualifier applied to function type
+                  # (hash_function_defaults.h).
+      "/wd4244",  # Conversion loss in MSVC STL instantiated by absl tests.
+    ]
+  }
+}
+
 if (absl_build_tests) {
   import("//third_party/googletest/test.gni")
 
