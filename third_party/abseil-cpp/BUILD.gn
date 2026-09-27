@@ -6246,6 +6246,23 @@ if (absl_build_tests) {
           ":random_internal_salted_seed_seq_test",
         ]
       }
+
+      # MinGW only: drop test files whose cases fail under MinGW (the gtest
+      # death-test subprocess mechanism, str_format/charconv formatting, and
+      # std::filesystem::path hashing). They pass on MSVC and on POSIX
+      # toolchains.
+      if (build_win_over_mingw) {
+        deps -= [
+          ":hash_test",
+          ":log_absl_log_basic_test",
+          ":log_globals_test",
+          ":log_sink_test",
+          ":log_streamer_test",
+          ":strings_charconv_test",
+          ":strings_str_format_convert_test",
+          ":strings_str_format_test",
+        ]
+      }
     }
   }
 }
