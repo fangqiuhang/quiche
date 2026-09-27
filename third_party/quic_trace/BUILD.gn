@@ -6,6 +6,7 @@ proto_library("quic_trace_proto") {
   # size concerns.
   visibility = [
     "//net:quic_test_tools",
+    "//third_party/quiche:moqt_core",
     "//third_party/quiche:quiche_tool_support",
   ]
 
