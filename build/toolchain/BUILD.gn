@@ -4,6 +4,7 @@
 
 import("//build/features.gni")
 import("//build/toolchain/gcc_toolchain.gni")
+import("//build/toolchain/toolchain.gni")
 
 # Local path to the shared Windows tool wrapper (used by the archive tool).
 if (host_os == "win") {
@@ -118,21 +119,17 @@ toolchain("gcc") {
     outputs = [ outfile ]
   }
 
+  # Use the standard copy/stamp commands from toolchain.gni (same as the MSVC
+  # toolchain): the copy wrapper creates missing destination directories,
+  # unlike a bare `cmd /c copy /y` which fails on a clean build when the
+  # target directory does not exist yet (e.g. anonymous_tokens test_data).
   tool("stamp") {
-    if (is_win) {
-      command = "cmd /c type nul > \"{{output}}\""
-    } else {
-      command = "touch \"{{output}}\""
-    }
-    description = "STAMP {{output}}"
+    command = stamp_command
+    description = stamp_description
   }
 
   tool("copy") {
-    if (is_win) {
-      command = "cmd /c copy /y \"{{source}}\" \"{{output}}\" > nul"
-    } else {
-      command = "cp -f \"{{source}}\" \"{{output}}\""
-    }
-    description = "COPY {{source}} {{output}}"
+    command = copy_command
+    description = copy_description
   }
 }
