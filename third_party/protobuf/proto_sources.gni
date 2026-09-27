@@ -152,6 +152,13 @@ protobuf_sources = [
   "$_include_dir/service.cc",
   "$_include_dir/symbol_checker.cc",
   "$_include_dir/text_format.cc",
+
+  # Well-known google.protobuf.Timestamp. dist/at the time the submodule was
+  # pinned, this generated file is not part of the curated lists; the
+  # blind_sign_auth protos import google/protobuf/timestamp.proto, so it must
+  # be compiled and linked or those targets fail with undefined Timestamp::*
+  # symbols.
+  "$_include_dir/timestamp.pb.cc",
   "$_include_dir/unknown_field_set.cc",
   "$_include_dir/util/delimited_message_util.cc",
   "$_include_dir/util/field_comparator.cc",
