@@ -4,6 +4,6 @@
 
 declare_args() {
   # Path to Visual Studio installation. If empty, auto-detect using vswhere.exe.
-  # Example: "C:\Program Files\Microsoft Visual Studio\18\Community"
-  visual_studio_path = ""
+  # Visual Studio Community 2026's default install path by default.
+  visual_studio_path = "C:\Program Files\Microsoft Visual Studio\18\Community"
 }
