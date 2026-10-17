@@ -136,18 +136,26 @@ is_apple = is_ios || is_mac || is_watchos
 is_posix = !is_win && !is_fuchsia
 
 # True when building for Windows with a MinGW/GCC toolchain (as opposed to
-# MSVC). Detected by querying the compiler for __MINGW32__ via
-# build/win/detect_mingw.py, so it also covers any future non-MSVC Windows
-# compiler. Always false on non-Windows and on MSVC builds.
-#
-# NOTE: exec_script "value" mode parses the script output, so "true"/"false"
-# come back as GN booleans (not strings) — assign them directly, never compare
-# with == "true".
+# MSVC). Detected by querying gcc for |__MINGW32__| via
+# build/win/detect_mingw.py. Detected early (and always with gcc, not clang)
+# so that is_clang can be corrected below: the //build/toolchain:gcc
+# toolchain always compiles with gcc, and BoringSSL's NASM branch is
+# MSVC/clang-cl-only (gcc silently ignores .asm "linker inputs", producing
+# no objects and breaking the link).
 build_win_over_mingw = false
 if (is_win && !build_win_over_msvc) {
   build_win_over_mingw =
       exec_script("//build/win/detect_mingw.py", [ "gcc" ], "value")
 }
+
+# The GCC toolchain is not clang, regardless of what is_clang defaulted to.
+if (build_win_over_mingw) {
+  is_clang = false
+}
+
+# NOTE: exec_script "value" mode parses the script output, so "true"/"false"
+# come back as GN booleans (not strings) assign them directly, never compare
+# with == "true". (See the build_win_over_mingw detection above.)
 
 # ==============================================================================
 # COMPONENT SETUP

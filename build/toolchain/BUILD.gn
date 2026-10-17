@@ -7,9 +7,36 @@ import("//build/toolchain/gcc_toolchain.gni")
 import("//build/toolchain/toolchain.gni")
 
 # Local path to the shared Windows tool wrapper (used by the archive tool).
-if (host_os == "win") {
+if (host_os == "win" && is_win) {
   _tool_wrapper_path =
       rebase_path("//build/toolchain/win/tool_wrapper.py", root_build_dir)
+}
+
+# Resolve gcc/g++ to absolute paths at `gn gen` time, so ninja does not depend
+# on the compiler being on PATH in whatever shell runs the build (e.g. building
+# from PowerShell/cmd with a MinGW that only lives in the MSYS PATH).
+if (host_os == "win" && is_win) {
+  _gcc_path = exec_script("//build/win/find_tool.py",
+                          [
+                            "gcc",
+                            "clang",
+                          ],
+                          "trim string")
+  _gxx_path = exec_script("//build/win/find_tool.py",
+                          [
+                            "g++",
+                            "clang++",
+                          ],
+                          "trim string")
+  _ar_path = exec_script("//build/win/find_tool.py",
+                         [
+                           "ar",
+                           "llvm-ar",
+                         ],
+                         "trim string")
+} else {
+  _gcc_path = "gcc"
+  _gxx_path = "g++"
 }
 
 clang_toolchain("clang") {
@@ -22,7 +49,7 @@ clang_toolchain("clang") {
 toolchain("gcc") {
   tool("cc") {
     depfile = "{{output}}.d"
-    command = "gcc -MMD -MF $depfile {{defines}} {{include_dirs}} {{cflags}} {{cflags_c}} -c {{source}} -o {{output}}"
+    command = "\"$_gcc_path\" -MMD -MF $depfile {{defines}} {{include_dirs}} {{cflags}} {{cflags_c}} -c {{source}} -o {{output}}"
     depsformat = "gcc"
     description = "CC {{output}}"
     outputs =
@@ -31,7 +58,7 @@ toolchain("gcc") {
 
   tool("cxx") {
     depfile = "{{output}}.d"
-    command = "g++ -MMD -MF $depfile {{defines}} {{include_dirs}} {{cflags}} {{cflags_cc}} -c {{source}} -o {{output}}"
+    command = "\"$_gxx_path\" -MMD -MF $depfile {{defines}} {{include_dirs}} {{cflags}} {{cflags_cc}} -c {{source}} -o {{output}}"
     depsformat = "gcc"
     description = "CXX {{output}}"
     outputs =
@@ -46,7 +73,7 @@ toolchain("gcc") {
       # `del /f ... & ar rcs ...` keeps stale members of an existing archive
       # (e.g. objects from sources that were removed). The wrapper always
       # produces a clean archive.
-      command = "\"$python_path\" $_tool_wrapper_path create-archive {{output}} $rspfile"
+      command = "\"$python_path\" $_tool_wrapper_path create-archive --ar=\"$_ar_path\" {{output}} $rspfile"
     } else {
       command = "rm -f \"{{output}}\" && ar rcs {{output}} @$rspfile"
     }
@@ -62,7 +89,7 @@ toolchain("gcc") {
   tool("asm") {
     # For GCC we can just use the C compiler to compile assembly.
     depfile = "{{output}}.d"
-    command = "gcc -MMD -MF $depfile {{defines}} {{include_dirs}} {{asmflags}} -c {{source}} -o {{output}}"
+    command = "\"$_gcc_path\" -MMD -MF $depfile {{defines}} {{include_dirs}} {{asmflags}} -c {{source}} -o {{output}}"
     depsformat = "gcc"
     description = "ASM {{output}}"
     outputs =
@@ -81,7 +108,7 @@ toolchain("gcc") {
       rspfile_content = "-Wl,--whole-archive {{inputs}} {{solibs}} -Wl,--no-whole-archive {{libs}}"
     }
 
-    command = "g++ -shared {{ldflags}} -o $sofile $os_specific_option @$rspfile"
+    command = "\"$_gxx_path\" -shared {{ldflags}} -o $sofile $os_specific_option @$rspfile"
 
     description = "SOLINK $soname"
 
@@ -104,11 +131,15 @@ toolchain("gcc") {
     outfile = "{{target_output_name}}{{output_extension}}"
     rspfile = "$outfile.rsp"
     if (is_mac) {
-      command = "g++ {{ldflags}} -o $outfile @$rspfile {{solibs}} {{libs}}"
+      command =
+          "\"$_gxx_path\" {{ldflags}} -o $outfile @$rspfile {{solibs}} {{libs}}"
     } else if (is_win) {
-      command = "g++ {{ldflags}} -o $outfile -Wl,--start-group @$rspfile {{solibs}} -Wl,--end-group {{libs}} -lws2_32"
+      # -static bakes libstdc++/libgcc/libwinpthread into the binary so the
+      # produced executables (protoc, test binaries, ...) run without the
+      # MinGW runtime DLLs being on PATH.
+      command = "\"$_gxx_path\" -static {{ldflags}} -o $outfile -Wl,--start-group @$rspfile {{solibs}} -Wl,--end-group {{libs}} -lws2_32"
     } else {
-      command = "g++ {{ldflags}} -o $outfile -Wl,--start-group @$rspfile {{solibs}} -Wl,--end-group {{libs}}"
+      command = "\"$_gxx_path\" {{ldflags}} -o $outfile -Wl,--start-group @$rspfile {{solibs}} -Wl,--end-group {{libs}}"
     }
     description = "LINK $outfile"
     default_output_dir = "{{root_out_dir}}"
