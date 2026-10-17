@@ -85,5 +85,23 @@ source_set("url_test_support") {
     "src/url/url_canon_icu_test_helpers.h",
   ]
 
-  public_deps = [ ":url" ]
+  # googleurl test headers include gtest with Chromium source-tree paths
+  # ("testing/gtest/include/gtest/..."). The googletest copy targets stage the
+  # headers in that layout under $root_out_dir/chromium_include.
+  # "overrides/" provides polyfills for Chromium-only headers that
+  # url/origin.h pulls in (gtest_prod_util.h, unguessable_token.h,
+  # robolectric_buildflags.h).
+  include_dirs = [
+    "overrides/",
+    "$root_out_dir/chromium_include",
+  ]
+
+  public_deps = [
+    ":url",
+    "//third_party/googletest:gtest",
+  ]
+  deps = [
+    "//third_party/googletest:gmock_chromium_layout",
+    "//third_party/googletest:gtest_chromium_layout",
+  ]
 }
