@@ -125,6 +125,43 @@ source_set("gtest") {
   }
 }
 
+# Stages gtest/gmock headers in a directory layout matching Chromium's source
+# tree ("testing/gtest/include/gtest/...") so Chromium-forked code (e.g.
+# googleurl) can include them with Chromium-style paths. Nested includes such
+# as "gtest/internal/..." are resolved through the regular include dirs from
+# :gtest_config, so only the top-level headers need to be staged.
+copy("gtest_chromium_layout") {
+  sources = [
+    "src/googletest/include/gtest/gtest-assertion-result.h",
+    "src/googletest/include/gtest/gtest-death-test.h",
+    "src/googletest/include/gtest/gtest-matchers.h",
+    "src/googletest/include/gtest/gtest-message.h",
+    "src/googletest/include/gtest/gtest-param-test.h",
+    "src/googletest/include/gtest/gtest-printers.h",
+    "src/googletest/include/gtest/gtest-spi.h",
+    "src/googletest/include/gtest/gtest-test-part.h",
+    "src/googletest/include/gtest/gtest-typed-test.h",
+    "src/googletest/include/gtest/gtest.h",
+    "src/googletest/include/gtest/gtest_pred_impl.h",
+    "src/googletest/include/gtest/gtest_prod.h",
+  ]
+  outputs = [ "$root_out_dir/chromium_include/testing/gtest/include/gtest/{{source_file_part}}" ]
+}
+
+copy("gmock_chromium_layout") {
+  sources = [
+    "src/googlemock/include/gmock/gmock-actions.h",
+    "src/googlemock/include/gmock/gmock-cardinalities.h",
+    "src/googlemock/include/gmock/gmock-function-mocker.h",
+    "src/googlemock/include/gmock/gmock-matchers.h",
+    "src/googlemock/include/gmock/gmock-more-matchers.h",
+    "src/googlemock/include/gmock/gmock-nice-strict.h",
+    "src/googlemock/include/gmock/gmock-spec-builders.h",
+    "src/googlemock/include/gmock/gmock.h",
+  ]
+  outputs = [ "$root_out_dir/chromium_include/testing/gmock/include/gmock/{{source_file_part}}" ]
+}
+
 # Do NOT depend on this directly. Use //testing/gtest:gtest_main instead.
 # See README.chromium for details.
 source_set("gtest_main") {
