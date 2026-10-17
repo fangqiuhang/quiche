@@ -36,6 +36,28 @@ Finally run the simple QUIC client:
 ./out/quic_client https://www.qiyi.com/ --quic_version=RFCv1 --disable_certificate_verification
 ```
 
+## Windows
+
+For Windows, support MinGW and MSVC (Microsoft Visual Studio).
+Verfied over Visual Studio Community 2026.
+However, Cygwin is not supported, denied by abseil-cpp.
+
+Synchronize git submodules:
+```
+git submodule update --init --recursive
+```
+
+Then build via GN+Ninja:
+```
+gn gen out
+ninja -C out quic_client
+```
+
+Finally run the simple QUIC client:
+```
+./out/quic_client https://www.qiyi.com/ --quic_version=RFCv1 --disable_certificate_verification
+```
+
 ## Mac
 
 Install Xcode and Xcode CommandLine Tools, then you will get `gcc` or `clang`.
