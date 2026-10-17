@@ -291,14 +291,13 @@ source_set("utf8_range") {
 
 copy("copy_google_protobuf") {
   # See README.chromium for how this file is generated.
-  sources = pyproto_sources + [ "python/google/protobuf/descriptor_pb2.py" ]
+  sources = pyproto_sources
   outputs = [ "$proto_python_root/google/protobuf/{{source_file_part}}" ]
 }
 
 copy("copy_google_protobuf_internal") {
   # See README.chromium for how this file is generated.
-  sources = pyproto_internal_sources +
-            [ "python/google/protobuf/internal/python_edition_defaults.py" ]
+  sources = pyproto_internal_sources
   outputs =
       [ "$proto_python_root/google/protobuf/internal/{{source_file_part}}" ]
 }
