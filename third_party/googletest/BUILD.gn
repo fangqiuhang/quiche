@@ -55,11 +55,14 @@ config("gmock_config") {
     "src/googlemock/include",
   ]
 
-  if (is_clang) {
-    # TODO(crbug.com/40616204): remove this when we migrated to new MOCK_METHOD
-    # macro.
-    # ref: https://google.github.io/googletest/gmock_cook_book.html#old-style-mock_methodn-macros
-    cflags = [ "-Wno-inconsistent-missing-override" ]
+  if (!build_win_over_msvc) {
+    cflags_cc = [ "-Wno-subobject-linkage" ]
+    if (is_clang) {
+      # TODO(crbug.com/40616204): remove this when we migrated to new MOCK_METHOD
+      # macro.
+      # ref: https://google.github.io/googletest/gmock_cook_book.html#old-style-mock_methodn-macros
+      cflags = [ "-Wno-inconsistent-missing-override" ]
+    }
   }
 }
 
