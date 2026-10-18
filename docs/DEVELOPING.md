@@ -1,3 +1,94 @@
+# Prepare build environment
+
+## Linux
+
+`Debian` for example.
+For other Linux distributions, most of them could also install `gn/ninja` via their package manager.
+```
+apt install generate-ninja ninja-build   # GN+Ninja
+apt install clang llvm                   # If build with "is_clang = true"
+```
+
+## Windows
+
+Windows support Vistual Stuidio and MinGW (GCC/C++, LLVM/Clang).
+
+GCC and clang could install directly, or prepared by `vcpkg`.
+However, `Cygwin` is not supported, including `MSYS2` denied by `abseil-cpp`.
+Do not build directly in `Cygwin` shell.
+Could prepare MingGW via `Cygwin` or `MSYS2`, add then into `System Variables`,
+and then build in `cmd` or `PowerShell`.
+
+`gn` could be installed by `vcpkg`, or build by self.
+`ninja` could be prepared by `vcpkg` or `MSYS2`.
+
+[MSYS2](https://www.msys2.org/):
+
+```
+pacman -S gcc clang ninja python3 git
+```
+
+However, MSYS does not provide `gn`, could build self or install via `vcpkg`.
+
+[vcpkg](https://vcpkg.io/en/):
+
+Install vcpkg:
+
+```
+cd D:\
+git clone https://github.com/microsoft/vcpkg
+cd vcpkg
+.\vcpkg\bootstrap-vcpkg.bat
+```
+Then set environment variable `VCPKG_ROOT` as `D:\vcpkg`.
+
+```
+cd D:\vcpkg
+vcpkg install vcpkg-tool-gn vcpkg-tool-ninja llvm[clang] fakeit
+```
+
+## MacOS
+
+Install `Xcode` and `brew`.
+Cannot directly install `gn` via `brew`.
+Should build it or using [`depot_tools`](https://chromium.googlesource.org/depot_tools.git).
+
+Install `ninja`:
+```
+brew install ninja
+```
+
+# Build over current platform
+
+## Linux
+
+On Linux, support GCC/C++ and LLVM/Clang.
+
+For GCC:
+```
+gn gen out/gcc
+ninja -C out/gcc
+```
+
+For Clang:
+```
+gn gen out/clang --args="is_clang=true"
+ninja -C out/clang
+```
+
+## Windows (Vistual Studio)
+
+```
+gn gen out/msvc --args="build_win_over_msvc=true"
+ninja -C out/msvc
+```
+
+## Windows (MinGW, GCC/C++, LLVM/Clang)
+
+# Cross build
+
+Not supported yet.
+
 # Directories
 
 This repository is a minimal GN+Ninja "glue" build around Google's QUICHE and
