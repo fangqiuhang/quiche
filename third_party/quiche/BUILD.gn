@@ -72,9 +72,13 @@ config("quiche_internal_config") {
       "-Wno-deprecated-declarations",  # absl::WriterMutexLock deprecated
                                        # pointer ctor
                                        # (cached_blind_sign_auth.h).
+      "-Wno-inconsistent-missing-override",
       "-Wno-narrowing",  # moqt tests initialize char arrays with values
                          # > 127 (e.g. moqt_parser_test.cc) which GCC flags
                          # as narrowing.
+      "-Wno-nullability-completeness",  # proof_source.h,
+                                        # quic_connection_alarms.h, etc.
+      "-Wno-unknown-warning-option",
       "-Wno-unused-result",  # protobuf SerializeToString() [[nodiscard]] bool
                              # ignored (quic_crypto_server_config_test.cc).
     ]
@@ -87,7 +91,6 @@ config("quiche_internal_config") {
     }
   }
   if (is_apple) {
-    cflags += [ "-Wno-nullability-completeness" ]
     ldflags = [
       "-framework",
       "CoreFoundation",
