@@ -61,6 +61,8 @@ config("quiche_internal_config") {
       "/wd4267",
       "/wd4715",
       "/wd4834",
+      "/wd4838",
+      "/wd4858",
     ]
 
     # |ssize_t| is POSIX; MSVC only provides it via windows.h as |SSIZE_T|.
