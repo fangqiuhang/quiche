@@ -32,6 +32,12 @@ config("internal_config") {
       "NOCRYPT",
     ]
   }
+  if (!build_win_over_msvc) {
+    cflags_cc = [
+      "-Wno-inconsistent-missing-override",
+      "-Wno-subobject-linkage",
+    ]
+  }
 }
 
 config("no_asm_config") {
