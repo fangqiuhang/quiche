@@ -75,12 +75,16 @@ config("quiche_internal_config") {
       "-Wno-narrowing",  # moqt tests initialize char arrays with values
                          # > 127 (e.g. moqt_parser_test.cc) which GCC flags
                          # as narrowing.
-      "-Wno-subobject-linkage",  # gtest parameterized test defined in an
-                                 # anonymous namespace
-                                 # (ObliviousHttpParameterizedTest).
       "-Wno-unused-result",  # protobuf SerializeToString() [[nodiscard]] bool
                              # ignored (quic_crypto_server_config_test.cc).
     ]
+    if (!is_clang) {
+      cflags_cc = [
+        "-Wno-subobject-linkage",  # gtest parameterized test defined in an
+                                   # anonymous namespace
+                                   # (ObliviousHttpParameterizedTest).
+      ]
+    }
   }
   if (is_apple) {
     cflags += [ "-Wno-nullability-completeness" ]
